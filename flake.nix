@@ -54,6 +54,8 @@
               # Configure DPI scaling for high resolution displays
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d 192 /f
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "192" /f
+              # Restart to apply DPI changes
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wineboot" -u
               
               # Configure Wine locale for Korean support
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f
@@ -73,6 +75,8 @@
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes" /v "굴림" /t REG_SZ /d "Noto Sans CJK KR" /f
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes" /v "Dotum" /t REG_SZ /d "Noto Sans CJK KR" /f
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes" /v "돋움" /t REG_SZ /d "Noto Sans CJK KR" /f
+              # Restart to pick up new fonts
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wineboot" -u
             fi
 
             # Install core Windows fonts for Korean support
@@ -86,7 +90,9 @@
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" "\$INSTALLER"
             fi
 
-            WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
+            GDK_SCALE="${GDK_SCALE:-2}" GDK_DPI_SCALE="${GDK_DPI_SCALE:-2}" \
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" \
+              "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
             EOF
 
             chmod +x $out/bin/kakaotalk

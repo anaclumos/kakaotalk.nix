@@ -1,6 +1,6 @@
 # KakaoTalk Nix Flake
 
-This repository packages the Windows version of **KakaoTalk** for Linux using Wine. The flake provides a wrapper that sets up a Wine prefix, configures fonts and locale for Korean support and then launches KakaoTalk.
+This repository packages the Windows version of **KakaoTalk** for NixOS.
 
 ```nix
 {

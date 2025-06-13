@@ -24,7 +24,7 @@
         default = self.packages.x86_64-linux.kakaotalk;
         kakaotalk = stdenv.mkDerivation rec {
           pname = "kakaotalk";
-          version = "3.7.0";
+          version = "0.1.0";
           src = kakaotalk-exe;
           dontUnpack = true;
           

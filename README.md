@@ -26,7 +26,7 @@ Add this flake to the `inputs` of your `flake.nix` and reference the package in 
 
 ```nix
 {
-  inputs.kakaotalk.url = "github:USER/kakaotalk.nix"; # replace with the repo location
+  inputs.kakaotalk.url = "github:anaclumos/kakaotalk.nix";
 
   outputs = { self, nixpkgs, kakaotalk, ... }: {
     nixosConfigurations."my-host".configuration = { pkgs, ... }: {

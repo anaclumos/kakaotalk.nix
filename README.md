@@ -1,10 +1,9 @@
 # KakaoTalk Nix Flake
 
-This repository packages the Windows version of **KakaoTalk** for Linux using [Bottles](https://usebottles.com/).
+This repository packages the Windows version of **KakaoTalk** for Linux using Wine. The flake provides a wrapper that sets up a Wine prefix, configures fonts and locale for Korean support and then launches KakaoTalk.
 
 ## Prerequisites
 - **Nix** with flakes enabled
-- **Bottles** installed on your system (`bottles-cli` should be in your `PATH`)
 
 ## Installation
 
@@ -38,7 +37,7 @@ Add this flake to the `inputs` of your `flake.nix` and reference the package in 
 }
 ```
 
-The first launch creates a new Bottles bottle named `kakaotalk` and runs the KakaoTalk installer automatically.
+On first launch a new Wine prefix is created at `\$XDG_DATA_HOME/kakaotalk`. The wrapper configures DPI scaling, installs core fonts and sets the locale for proper Korean support before running the KakaoTalk installer automatically.
 
 ## Uninstallation
 
@@ -50,10 +49,10 @@ To remove KakaoTalk from your system:
    nix profile remove kakaotalk
    ```
 
-2. Delete the created bottle (if present):
+2. Remove the Wine prefix:
 
    ```bash
-   bottles-cli remove -b kakaotalk
+   rm -rf ${XDG_DATA_HOME:-$HOME/.local/share}/kakaotalk
    ```
 
 ## License

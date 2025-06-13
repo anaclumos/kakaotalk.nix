@@ -24,7 +24,12 @@ If you're interested in how it actually works in NixOS, see: https://github.com/
 
 - Remove the Flakes Input.
 - Delete `~/.local/share/kakaotalk`
-- Delete `~/.local/share/applications/wine/Programs/카카오톡.desktop` or `~/.local/share/applications/wine/Programs/kakaotalk.desktop`
+- Delete
+  - `~/.local/share/applications/wine/Programs/카카오톡.desktop`
+  - `~/.local/share/applications/wine/Programs/kakaotalk.desktop`
+  - `~/.local/share/applications/wine-protocol-kakaotalk.desktop`
+  - `~/.local/share/applications/wine-protocol-kakaoopen.desktop`
+
 
 ## License
 

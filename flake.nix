@@ -90,7 +90,7 @@
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" "\$INSTALLER"
             fi
 
-            GDK_SCALE="${GDK_SCALE:-2}" GDK_DPI_SCALE="${GDK_DPI_SCALE:-2}" \
+            GDK_SCALE="\$\{GDK_SCALE:-2\}" GDK_DPI_SCALE="\$\{GDK_DPI_SCALE:-2\}" \
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" \
               "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
             EOF

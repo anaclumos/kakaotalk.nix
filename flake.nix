@@ -30,7 +30,8 @@
           
           nativeBuildInputs = [
             makeWrapper
-            bottles
+            wineWowPackages.stable
+            winetricks
             noto-fonts-cjk-sans
           ];
           
@@ -39,20 +40,31 @@
             cp ${kakaotalk-icon} $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
             cp ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
             # Create launcher script
-            cat > $out/bin/kakaotalk << 'EOF'
-            #!/bin/sh
-            BOTTLE="kakaotalk"
+            cat > $out/bin/kakaotalk <<EOF
+            #!/usr/bin/env bash
+            PREFIX="${XDG_DATA_HOME:-$HOME/.local/share}/kakaotalk"
             INSTALLER="$out/share/kakaotalk/KakaoTalk_Setup.exe"
+            FONT_SOURCE=${noto-fonts-cjk-sans}/share/fonts
 
-            if ! bottles-cli list | grep -q "$BOTTLE"; then
-              echo "Creating bottle for KakaoTalk..."
-              bottles-cli create -b "$BOTTLE"
-              bottles-cli run -b "$BOTTLE" "$INSTALLER"
+            if [ ! -d "$PREFIX" ]; then
+              mkdir -p "$PREFIX"
+              WINEPREFIX="$PREFIX" wineboot -u
             fi
 
-            bottles-cli run -b "$BOTTLE" "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "$@"
+            FONT_DIR="$PREFIX/drive_c/windows/Fonts"
+            if [ ! -f "$FONT_DIR/NotoSansCJK-Regular.otf" ]; then
+              mkdir -p "$FONT_DIR"
+              cp "$FONT_SOURCE"/* "$FONT_DIR" 2>/dev/null || true
+            fi
+
+            if [ ! -f "$PREFIX/drive_c/Program Files (x86)/Kakao/KakaoTalk/KakaoTalk.exe" ]; then
+              echo "Installing KakaoTalk..."
+              WINEPREFIX="$PREFIX" wine "$INSTALLER"
+            fi
+
+            WINEPREFIX="$PREFIX" wine "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "$@"
             EOF
-            
+
             chmod +x $out/bin/kakaotalk
           '';
           meta = with lib; {

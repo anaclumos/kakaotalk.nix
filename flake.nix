@@ -45,6 +45,7 @@
             #!/bin/sh
             export WINEPREFIX="\$HOME/.wine-kakaotalk"
             export WINEARCH=win64
+            export WINE_NO_TRAY_ICON=1
 
             # Setup wine prefix if it doesn't exist
             if [ ! -d "\$WINEPREFIX" ]; then

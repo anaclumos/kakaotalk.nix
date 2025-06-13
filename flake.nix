@@ -4,9 +4,12 @@
   inputs = {
     erosanix.url = "github:emmanuelrosa/erosanix";
 
-    # Single‑file Pretendard variable TTF
-    pretendard = {
-      url   = "https://raw.githubusercontent.com/orioncactus/pretendard/refs/heads/main/packages/pretendard/dist/public/variable/PretendardVariable.ttf";
+    pretendard-regular = {
+      url = "https://raw.githubusercontent.com/orioncactus/pretendard/main/packages/pretendard/dist/public/static/alternative/Pretendard-Regular.ttf";
+      flake = false;
+    };
+    pretendard-bold = {
+      url = "https://raw.githubusercontent.com/orioncactus/pretendard/main/packages/pretendard/dist/public/static/alternative/Pretendard-Bold.ttf";
       flake = false;
     };
     kakaotalk-exe = {
@@ -19,26 +22,22 @@
     };
   };
 
-  outputs = { self, nixpkgs, erosanix, pretendard, kakaotalk-exe, kakaotalk-icon }: {
+  outputs = { self, nixpkgs, erosanix, pretendard-regular, pretendard-bold, kakaotalk-exe, kakaotalk-icon }: {
     packages.x86_64-linux =
       let
         pkgs = import "${nixpkgs}" {
           system = "x86_64-linux";
         };
 
-        # wrap the raw file as a Nix font package so we can reference it
         pretendardPkg = pkgs.stdenvNoCC.mkDerivation {
-          pname   = "pretendard";
+          pname = "pretendard";
           version = "1.3.9";
-          src     = pretendard;
+          srcs = [ pretendard-regular pretendard-bold ];
           dontUnpack = true;
           installPhase = ''
-            install -Dm644 $src $out/share/fonts/truetype/Pretendard.ttf
+            install -Dm644 ${pretendard-regular} $out/share/fonts/truetype/Pretendard-Regular.ttf
+            install -Dm644 ${pretendard-bold}   $out/share/fonts/truetype/Pretendard-Bold.ttf
           '';
-          meta = with pkgs.lib; {
-            description = "Pretendard Korean UI font";
-            license     = licenses.ofl;
-          };
         };
       in
       with (pkgs // erosanix.packages.x86_64-linux // erosanix.lib.x86_64-linux); {
@@ -57,9 +56,11 @@
           inputHashMethod = "store-path";
           nativeBuildInputs = [ pretendardPkg ];
           winAppInstall = ''
-            # copy the font so Wine enumerates it
-            install -m644 "${pretendardPkg}/share/fonts/truetype/Pretendard.ttf" \
-                 "$WINEPREFIX/drive_c/windows/Fonts/Pretendard.ttf"
+            # copy the fonts so Wine enumerates them
+            install -m644 "${pretendardPkg}/share/fonts/truetype/Pretendard-Regular.ttf" \
+                 "$WINEPREFIX/drive_c/windows/Fonts/Pretendard-Regular.ttf"
+            install -m644 "${pretendardPkg}/share/fonts/truetype/Pretendard-Bold.ttf" \
+                 "$WINEPREFIX/drive_c/windows/Fonts/Pretendard-Bold.ttf"
 
             # map Windows' default Korean UI font to Pretendard
             reg add "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes" \

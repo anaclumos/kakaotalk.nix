@@ -42,27 +42,28 @@
             # Create launcher script
             cat > $out/bin/kakaotalk <<EOF
             #!/usr/bin/env bash
-            PREFIX="\${XDG_DATA_HOME:-$HOME/.local/share}/kakaotalk"
+            PREFIX="\''${XDG_DATA_HOME:-\$HOME/.local/share}/kakaotalk"
             INSTALLER="$out/share/kakaotalk/KakaoTalk_Setup.exe"
             FONT_SOURCE=${noto-fonts-cjk-sans}/share/fonts
+            WINE_PATH=${wineWowPackages.stable}/bin
 
-            if [ ! -d "$PREFIX" ]; then
-              mkdir -p "$PREFIX"
-              WINEPREFIX="$PREFIX" wineboot -u
+            if [ ! -d "\$PREFIX" ]; then
+              mkdir -p "\$PREFIX"
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wineboot" -u
             fi
 
-            FONT_DIR="$PREFIX/drive_c/windows/Fonts"
-            if [ ! -f "$FONT_DIR/NotoSansCJK-Regular.otf" ]; then
-              mkdir -p "$FONT_DIR"
-              cp "$FONT_SOURCE"/* "$FONT_DIR" 2>/dev/null || true
+            FONT_DIR="\$PREFIX/drive_c/windows/Fonts"
+            if [ ! -f "\$FONT_DIR/NotoSansCJK-Regular.otf" ]; then
+              mkdir -p "\$FONT_DIR"
+              cp "\$FONT_SOURCE"/* "\$FONT_DIR" 2>/dev/null || true
             fi
 
-            if [ ! -f "$PREFIX/drive_c/Program Files (x86)/Kakao/KakaoTalk/KakaoTalk.exe" ]; then
+            if [ ! -f "\$PREFIX/drive_c/Program Files (x86)/Kakao/KakaoTalk/KakaoTalk.exe" ]; then
               echo "Installing KakaoTalk..."
-              WINEPREFIX="$PREFIX" wine "$INSTALLER"
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" "\$INSTALLER"
             fi
 
-            WINEPREFIX="$PREFIX" wine "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "$@"
+            WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
             EOF
 
             chmod +x $out/bin/kakaotalk

@@ -11,7 +11,7 @@ This repository packages the Windows version of **KakaoTalk** for Linux using [B
 To build and run KakaoTalk without installing it system wide:
 
 ```bash
-nix run .
+nix run github:anaclumos/kakaotalk.nix
 ```
 
 To permanently install it into your user profile:

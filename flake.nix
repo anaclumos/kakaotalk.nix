@@ -35,9 +35,22 @@
           ];
           
           installPhase = ''
-            mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/kakaotalk
+            mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/applications $out/share/kakaotalk
             cp ${kakaotalk-icon} $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
             cp ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
+            
+            # Create desktop entry
+            cat > $out/share/applications/kakaotalk.desktop <<EOF
+            [Desktop Entry]
+            Name=KakaoTalk
+            Comment=A messaging and video calling app
+            Exec=$out/bin/kakaotalk
+            Icon=kakaotalk
+            Terminal=false
+            Type=Application
+            Categories=Network;InstantMessaging;
+            StartupWMClass=kakaotalk.exe
+            EOF
             # Create launcher script
             cat > $out/bin/kakaotalk <<EOF
             #!/usr/bin/env bash

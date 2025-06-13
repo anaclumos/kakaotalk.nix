@@ -42,7 +42,7 @@
             # Create launcher script
             cat > $out/bin/kakaotalk <<EOF
             #!/usr/bin/env bash
-            PREFIX="${XDG_DATA_HOME:-$HOME/.local/share}/kakaotalk"
+            PREFIX="\${XDG_DATA_HOME:-$HOME/.local/share}/kakaotalk"
             INSTALLER="$out/share/kakaotalk/KakaoTalk_Setup.exe"
             FONT_SOURCE=${noto-fonts-cjk-sans}/share/fonts
 

@@ -32,7 +32,6 @@
             makeWrapper
             wineWowPackages.stable
             winetricks
-            noto-fonts-cjk-sans
           ];
           
           installPhase = ''
@@ -44,16 +43,15 @@
             #!/usr/bin/env bash
             PREFIX="\''${XDG_DATA_HOME:-\$HOME/.local/share}/kakaotalk"
             INSTALLER="$out/share/kakaotalk/KakaoTalk_Setup.exe"
-            FONT_SOURCE=${noto-fonts-cjk-sans}/share/fonts
             WINE_PATH=${wineWowPackages.stable}/bin
 
             if [ ! -d "\$PREFIX" ]; then
               mkdir -p "\$PREFIX"
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wineboot" -u
               
-              # Configure DPI scaling for high resolution displays
-              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d 192 /f
-              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "192" /f
+              # Configure DPI scaling for normal displays
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d 96 /f
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "96" /f
               # Restart to apply DPI changes
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wineboot" -u
               
@@ -61,23 +59,12 @@
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "InstallLanguage" /t REG_SZ /d "0412" /f
+              
+              # Disable system tray functionality
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed" /t REG_SZ /d "Y" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Explorer" /v "Desktop" /t REG_SZ /d "Default" /f
             fi
 
-            FONT_DIR="\$PREFIX/drive_c/windows/Fonts"
-            if [ ! -f "\$FONT_DIR/NotoSansCJK-Regular.otf" ]; then
-              mkdir -p "\$FONT_DIR"
-              cp "\$FONT_SOURCE"/* "\$FONT_DIR" 2>/dev/null || true
-              
-              # Register Korean fonts in Wine registry
-              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes" /v "Malgun Gothic" /t REG_SZ /d "Noto Sans CJK KR" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes" /v "맑은 고딕" /t REG_SZ /d "Noto Sans CJK KR" /f  
-              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes" /v "Gulim" /t REG_SZ /d "Noto Sans CJK KR" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes" /v "굴림" /t REG_SZ /d "Noto Sans CJK KR" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes" /v "Dotum" /t REG_SZ /d "Noto Sans CJK KR" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes" /v "돋움" /t REG_SZ /d "Noto Sans CJK KR" /f
-              # Restart to pick up new fonts
-              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wineboot" -u
-            fi
 
             # Install core Windows fonts for Korean support
             if [ ! -f "\$PREFIX/.winetricks_done" ]; then
@@ -90,8 +77,7 @@
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" "\$INSTALLER"
             fi
 
-            GDK_SCALE="\$\{GDK_SCALE:-2\}" GDK_DPI_SCALE="\$\{GDK_DPI_SCALE:-2\}" \
-              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" \
+            WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" \
               "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
             EOF
 

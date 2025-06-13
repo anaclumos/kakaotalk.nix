@@ -34,11 +34,11 @@
           persistRegistry = false;
           persistRuntimeLayer = false;
           inputHashMethod = "store-path";
-          nativeBuildInputs = [ nanum ];
+          nativeBuildInputs = [ pretendard ];
           winAppInstall = ''
-            ln -s "${nanum}/share/fonts/NanumBarunGothic.ttf" "$WINEPREFIX/drive_c/windows/Fonts/NanumBarunGothic.ttf"
+            ln -s "${pretendard}/share/fonts/truetype/Pretendard-Regular.ttf" "$WINEPREFIX/drive_c/windows/Fonts/Pretendard-Regular.ttf"
             wine ${src}
-            echo "CustomFontFaceName=NanumBarunGothic" >> "$WINEPREFIX/drive_c/users/$USER/AppData/Local/Kakao/KakaoTalk/pref.ini"
+            echo "CustomFontFaceName=Pretendard" >> "$WINEPREFIX/drive_c/users/$USER/AppData/Local/Kakao/KakaoTalk/pref.ini"
           '';
           winAppRun = ''
             wine "$WINEPREFIX/drive_c/Program Files (x86)/Kakao/KakaoTalk/KakaoTalk.exe" "$ARGS"

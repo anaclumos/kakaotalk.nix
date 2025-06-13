@@ -20,6 +20,12 @@ Installation: Select 2nd option (First Tofu); and install with guesswork, once i
 
 If you're interested in how it actually works in NixOS, see: https://github.com/anaclumos/nixos
 
+## Uninstalling
+
+- Remove the Flakes Input.
+- Delete `~/.local/share/kakaotalk`
+- Delete `~/.local/share/applications/wine/Programs/카카오톡.desktop` or `~/.local/share/applications/wine/Programs/kakaotalk.desktop`
+
 ## License
 
 KakaoTalk is proprietary software owned by Kakao Corp. This flake is merely a packaging script and does not provide the software itself.

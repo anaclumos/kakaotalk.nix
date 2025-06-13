@@ -6,7 +6,7 @@
 
     # Single‑file Pretendard variable TTF
     pretendard = {
-      url   = "https://github.com/orioncactus/pretendard/raw/refs/heads/main/packages/pretendard/dist/public/variable/PretendardVariable.ttf";
+      url   = "https://raw.githubusercontent.com/orioncactus/pretendard/refs/heads/main/packages/pretendard/dist/public/variable/PretendardVariable.ttf";
       flake = false;
     };
     kakaotalk-exe = {

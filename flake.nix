@@ -28,52 +28,31 @@
           src = kakaotalk-exe;
           dontUnpack = true;
           
-          nativeBuildInputs = [ 
-            makeWrapper 
-            wineWowPackages.stable 
+          nativeBuildInputs = [
+            makeWrapper
+            bottles
             noto-fonts-cjk-sans
-            winetricks
           ];
           
           installPhase = ''
             mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/kakaotalk
             cp ${kakaotalk-icon} $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
             cp ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
-            
             # Create launcher script
-            cat > $out/bin/kakaotalk << EOF
+            cat > $out/bin/kakaotalk << 'EOF'
             #!/bin/sh
-            export WINEPREFIX="\$HOME/.wine-kakaotalk"
-            export WINEARCH=win64
+            BOTTLE="kakaotalk"
+            INSTALLER="$out/share/kakaotalk/KakaoTalk_Setup.exe"
 
-            # Setup wine prefix if it doesn't exist
-            if [ ! -d "\$WINEPREFIX" ]; then
-              echo "Setting up KakaoTalk Wine environment..."
-              ${wineWowPackages.stable}/bin/wineboot --init
-              
-              # Install Noto CJK fonts
-              mkdir -p "\$WINEPREFIX/drive_c/windows/Fonts"
-              find ${noto-fonts-cjk-sans}/share/fonts -name "*.otf" -exec cp {} "\$WINEPREFIX/drive_c/windows/Fonts/" \\;
-              
-              # Install essential Windows components
-              ${winetricks}/bin/winetricks -q vcrun2019 corefonts
-              
-              # Configure DPI scaling for high-DPI displays (200% scaling)
-              ${wineWowPackages.stable}/bin/wine reg add "HKCU\\Software\\Wine\\X11 Driver" /v ClientSideGraphics /t REG_SZ /d Y /f
-              ${wineWowPackages.stable}/bin/wine reg add "HKCU\\Control Panel\\Desktop" /v LogPixels /t REG_DWORD /d 192 /f
-              ${wineWowPackages.stable}/bin/wine reg add "HKCU\\Software\\Wine\\Fonts" /v LogPixels /t REG_DWORD /d 192 /f
-              
-              # Install KakaoTalk
-              echo "Installing KakaoTalk..."
-              ${wineWowPackages.stable}/bin/wine "$out/share/kakaotalk/KakaoTalk_Setup.exe" /S
-              
-              # Wait for installation to complete
-              sleep 5
+            if ! bottles-cli list | grep -q "$BOTTLE"; then
+              echo "Creating bottle for KakaoTalk..."
+              bottles-cli create -b "$BOTTLE"
+              bottles-cli run -b "$BOTTLE" "$INSTALLER"
             fi
 
-            # Run KakaoTalk
-            ${wineWowPackages.stable}/bin/wine "\$WINEPREFIX/drive_c/Program Files (x86)/Kakao/KakaoTalk/KakaoTalk.exe" "\$@"
+            bottles-cli run -b "$BOTTLE" "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "$@"
             EOF
+            
             chmod +x $out/bin/kakaotalk
           '';
           meta = with lib; {

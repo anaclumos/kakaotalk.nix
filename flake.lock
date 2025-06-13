@@ -89,12 +89,38 @@
         "type": "indirect"
       }
     },
+    "pretendard-bold": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-lHIj132+7RPPYY/DfBdyJWJF/kwZkMB0egkEzM3uY5E=",
+        "type": "file",
+        "url": "https://raw.githubusercontent.com/orioncactus/pretendard/main/packages/pretendard/dist/public/static/alternative/Pretendard-Bold.ttf"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://raw.githubusercontent.com/orioncactus/pretendard/main/packages/pretendard/dist/public/static/alternative/Pretendard-Bold.ttf"
+      }
+    },
+    "pretendard-regular": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-CuBL0tnHOChjPhpeLDfyb8HBBrfzQvwfsHkP7T0+qhE=",
+        "type": "file",
+        "url": "https://raw.githubusercontent.com/orioncactus/pretendard/main/packages/pretendard/dist/public/static/alternative/Pretendard-Regular.ttf"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://raw.githubusercontent.com/orioncactus/pretendard/main/packages/pretendard/dist/public/static/alternative/Pretendard-Regular.ttf"
+      }
+    },
     "root": {
       "inputs": {
         "erosanix": "erosanix",
         "kakaotalk-exe": "kakaotalk-exe",
         "kakaotalk-icon": "kakaotalk-icon",
-        "nixpkgs": "nixpkgs_2"
+        "nixpkgs": "nixpkgs_2",
+        "pretendard-bold": "pretendard-bold",
+        "pretendard-regular": "pretendard-regular"
       }
     }
   },

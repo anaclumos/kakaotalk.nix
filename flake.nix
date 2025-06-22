@@ -77,7 +77,9 @@
                   WINEPREFIX="$PREFIX" "$WINEBOOT" -u
                   
                   # Configure Wine settings
-                  WINEPREFIX="$PREFIX" "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed" /t REG_SZ /d "N" /f
+                  WINEPREFIX="$PREFIX" "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed" /t REG_SZ /d "Y" /f
+                  WINEPREFIX="$PREFIX" "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Decorated" /t REG_SZ /d "Y" /f
+                  WINEPREFIX="$PREFIX" "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseXIM" /t REG_SZ /d "N" /f
                   WINEPREFIX="$PREFIX" "$WINE" reg delete "HKEY_CURRENT_USER\\Software\\Wine\\Explorer" /v "Desktop" /f 2>/dev/null || true
                   
                   # Configure font rendering
@@ -85,6 +87,17 @@
                   WINEPREFIX="$PREFIX" "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "ClientSideAntiAliasWithRender" /t REG_SZ /d "Y" /f
                   WINEPREFIX="$PREFIX" "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f
                   WINEPREFIX="$PREFIX" "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingType" /t REG_DWORD /d 2 /f
+                  
+                  # Configure window behavior for better Wayland compatibility
+                  WINEPREFIX="$PREFIX" "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\DWM" /v "AllowWindowAnimation" /t REG_DWORD /d 1 /f
+                  WINEPREFIX="$PREFIX" "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\DWM" /v "AllowWinodwMaximize" /t REG_DWORD /d 1 /f
+                  
+                  # Configure window manager class hints for KakaoTalk
+                  WINEPREFIX="$PREFIX" "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\AppDefaults\\KakaoTalk.exe\\X11 Driver" /v "Managed" /t REG_SZ /d "Y" /f
+                  WINEPREFIX="$PREFIX" "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\AppDefaults\\KakaoTalk.exe\\X11 Driver" /v "Decorated" /t REG_SZ /d "Y" /f
+                  
+                  # Enable proper keyboard shortcuts
+                  WINEPREFIX="$PREFIX" "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "InputStyle" /t REG_SZ /d "root" /f
                 fi
                 
                 # Install KakaoTalk if not present
@@ -93,8 +106,16 @@
                   WINEPREFIX="$PREFIX" "$WINE" "$INSTALLER"
                 fi
                 
-                # Run KakaoTalk
-                exec env WINEPREFIX="$PREFIX" "$WINE" "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "$@"
+                # Set Wayland-specific environment variables
+                export WINEDLLOVERRIDES="winemenubuilder.exe=d"
+                export WINE_DISABLE_WAYLAND=0
+                export WINE_ENABLE_PIPE_SYNC_FOR_APP=1
+                
+                # Run KakaoTalk with improved window management
+                exec env WINEPREFIX="$PREFIX" \
+                  WINE_ENABLE_PIPE_SYNC_FOR_APP=1 \
+                  WINE_DISABLE_WAYLAND=0 \
+                  "$WINE" "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "$@"
               ''} $out/bin/kakaotalk \
                 --prefix PATH : ${wine}/bin \
                 --prefix PATH : ${winetricks}/bin

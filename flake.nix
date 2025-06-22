@@ -67,7 +67,7 @@
                 set -e
                 
                 PREFIX="${winePrefix}"
-                INSTALLER="$out/share/kakaotalk/KakaoTalk_Setup.exe"
+                INSTALLER="${src}"
                 WINE="${wine}/bin/wine"
                 WINEBOOT="${wine}/bin/wineboot"
                 

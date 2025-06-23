@@ -38,13 +38,13 @@ If you're interested in how it actually works in NixOS, see: https://github.com/
 - Delete `~/.local/share/kakaotalk`
 - Delete
   - `~/.local/share/applications/wine/Programs/카카오톡.desktop`
-  - `~/.local/share/applications/wine/Programs/kakaotalk.desktop`
+  - `~/.local/share/applications/wine/Programs/KakaoTalk.desktop`
   - `~/.local/share/applications/wine-protocol-kakaotalk.desktop`
   - `~/.local/share/applications/wine-protocol-kakaoopen.desktop`
 
 
 ```
-rm -rf ~/.local/share/kakaotalk ~/.local/share/applications/wine/Programs/카카오톡.desktop ~/.local/share/applications/wine/Programs/kakaotalk.desktop ~/.local/share/applications/wine-protocol-kakaotalk.desktop ~/.local/share/applications/wine-protocol-kakaoopen.desktop
+rm -rf ~/.local/share/kakaotalk ~/.local/share/applications/wine/Programs/카카오톡.desktop ~/.local/share/applications/wine/Programs/KakaoTalk.desktop ~/.local/share/applications/wine-protocol-kakaotalk.desktop ~/.local/share/applications/wine-protocol-kakaoopen.desktop
 ```
 
 ## License

@@ -1,108 +1,93 @@
 {
-  description = "KakaoTalk on NixOS";
-
+  description = "A Nix flake for KakaoTalk";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
+    kakaotalk-exe = {
+      url = "https://app-pc.kakaocdn.net/talk/win32/KakaoTalk_Setup.exe";
+      flake = false;
+    };
+    kakaotalk-icon = {
+      url = "https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg";
+      flake = false;
+    };
   };
-
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
+  outputs = { self, nixpkgs, kakaotalk-exe, kakaotalk-icon }: {
+    packages.x86_64-linux =
       let
-        pkgs = nixpkgs.legacyPackages.${system};
-
-        kakaotalkSrc = pkgs.fetchurl {
-          url = "https://app-pc.kakaocdn.net/talk/win32/KakaoTalk_Setup.exe";
-          sha256 = "0j853x6ihgqvkzfnijw92q6z22d2m60clbdk5mr1n0qx0s1bm009";
+        pkgs = import "${nixpkgs}" {
+          system = "x86_64-linux";
         };
-
-        kakaotalkIcon = pkgs.fetchurl {
-          url =
-            "https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg";
-          sha256 = "16ad4i7k1zm5drxkhfzplxfpk41js71kp9vr6xadl2jh27y67pfh";
-        };
-
-        wine = pkgs.wineWowPackages.stable;
-        winetricks = pkgs.winetricks;
-
-        winePrefix = "\${XDG_DATA_HOME:-$HOME/.local/share}/kakaotalk";
-      in {
-        packages = {
-          default = self.packages.${system}.kakaotalk;
-
-          kakaotalk = pkgs.stdenv.mkDerivation rec {
-            pname = "kakaotalk";
-            version = "0.1.0";
-
-            src = kakaotalkSrc;
-            dontUnpack = true;
-
-            nativeBuildInputs = with pkgs; [ makeWrapper copyDesktopItems ];
-
-            desktopItem = pkgs.makeDesktopItem {
-              name = "kakaotalk";
-              desktopName = "KakaoTalk";
-              exec = "kakaotalk";
-              icon = "kakaotalk";
-              categories = [ "Network" "InstantMessaging" ];
-              comment = "KakaoTalk messenger via Wine";
-              startupWMClass = "kakaotalk.exe";
-            };
-
-            installPhase = ''
-              runHook preInstall
-              install -Dm644 ${src} \
-                   $out/share/kakaotalk/KakaoTalk_Setup.exe
-              install -Dm644 ${kakaotalkIcon} \
-                   $out/share/icons/hicolor/scalable/apps/kakaotalk.svg              
-              install -Dm644 ${desktopItem}/share/applications/*.desktop \
-                   -t $out/share/applications
-              makeWrapper ${
-                pkgs.writeShellScript "kakaotalk-launcher" ''
-                  set -e
-                  PREFIX="${winePrefix}"
-                  INSTALLER="${src}"
-                  if [ ! -d "$PREFIX" ]; then
-                    mkdir -p "$PREFIX"
-                    WINEPREFIX="$PREFIX" ${wine}/bin/wineboot -u
-                    WINEPREFIX="$PREFIX" ${winetricks}/bin/winetricks \
-                      -q corefonts cjkfonts || true
-                  fi
-                  if [ ! -f "$PREFIX/drive_c/Program Files (x86)/Kakao/KakaoTalk/KakaoTalk.exe" ]; then
-                    echo "Installing KakaoTalk..."
-                    WINEPREFIX="$PREFIX" ${wine}/bin/wine "$INSTALLER"
-                  fi
-                  exec env \
-                    WINEPREFIX="$PREFIX" \
-                    LANG="ko_KR.UTF-8" \
-                    LC_ALL="ko_KR.UTF-8" \
-                    ${wine}/bin/wine \
-                    "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "$@"
-                ''
-              } \
-              $out/bin/kakaotalk \
-              --prefix PATH : ${wine}/bin \
-              --prefix PATH : ${winetricks}/bin
-
-              runHook postInstall
-            '';
-            meta = with pkgs.lib; {
-              description = "KakaoTalk on NixOS";
-              homepage =
-                "https://www.kakaocorp.com/page/service/service/KakaoTalk";
-              license = licenses.unfree;
-              platforms = [ "x86_64-linux" ];
-              mainProgram = "kakaotalk";
-            };
+      in
+      with pkgs; {
+        default = self.packages.x86_64-linux.kakaotalk;
+        kakaotalk = stdenv.mkDerivation rec {
+          pname = "kakaotalk";
+          version = "0.1.0";
+          src = kakaotalk-exe;
+          dontUnpack = true;
+          
+          nativeBuildInputs = [
+            makeWrapper
+            wineWowPackages.stable
+            winetricks
+          ];
+          
+          installPhase = ''
+            mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/applications $out/share/kakaotalk
+            cp ${kakaotalk-icon} $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
+            cp ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
+            cat > $out/share/applications/KakaoTalk.desktop <<EOF
+            [Desktop Entry]
+            Name=KakaoTalk
+            Comment=A messaging and video calling app
+            Exec=$out/bin/kakaotalk
+            Icon=kakaotalk
+            Terminal=false
+            Type=Application
+            Categories=Network;InstantMessaging;
+            StartupWMClass=kakaotalk.exe
+            EOF
+            cat > $out/bin/kakaotalk <<EOF
+            #!/usr/bin/env bash
+            PREFIX="\''${XDG_DATA_HOME:-\$HOME/.local/share}/kakaotalk"
+            INSTALLER="$out/share/kakaotalk/KakaoTalk_Setup.exe"
+            WINE_PATH=${wineWowPackages.stable}/bin
+            if [ ! -d "\$PREFIX" ]; then
+              mkdir -p "\$PREFIX"
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wineboot" -u
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d 96 /f
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "96" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wineboot" -u
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "InstallLanguage" /t REG_SZ /d "0412" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed" /t REG_SZ /d "N" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg delete "HKEY_CURRENT_USER\\Software\\Wine\\Explorer" /v "Desktop" /f 2>/dev/null || true
+            fi
+            if [ ! -f "\$PREFIX/.winetricks_done" ]; then
+              WINEPREFIX="\$PREFIX" ${winetricks}/bin/winetricks corefonts -q
+              touch "\$PREFIX/.winetricks_done"
+            fi
+            if [ ! -f "\$PREFIX/drive_c/Program Files (x86)/Kakao/KakaoTalk/KakaoTalk.exe" ]; then
+              echo "Installing KakaoTalk..."
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" "\$INSTALLER"
+            fi
+            WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" \
+              "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
+            EOF
+            chmod +x $out/bin/kakaotalk
+          '';
+          meta = with lib; {
+            description = "A messaging and video calling app.";
+            homepage = "https://www.kakaocorp.com/page/service/service/KakaoTalk";
+            license = licenses.unfree;
+            platforms = [ "x86_64-linux" ];
           };
         };
-
-        apps = {
-          default = self.apps.${system}.kakaotalk;
-          kakaotalk = {
-            type = "app";
-            program = "${self.packages.${system}.kakaotalk}/bin/kakaotalk";
-          };
-        };
-      });
+      };
+    apps.x86_64-linux.kakaotalk = {
+      type = "app";
+      program = "${self.packages.x86_64-linux.kakaotalk}/bin/kakaotalk";
+    };
+    apps.x86_64-linux.default = self.apps.x86_64-linux.kakaotalk;
+  };
 }

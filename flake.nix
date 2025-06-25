@@ -55,7 +55,7 @@
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "InstallLanguage" /t REG_SZ /d "0412" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed" /t REG_SZ /d "N" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg delete "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed" /f 2>/dev/null || true
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg delete "HKEY_CURRENT_USER\\Software\\Wine\\Explorer" /v "Desktop" /f 2>/dev/null || true
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseTakeFocus" /t REG_SZ /d "N" /f
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Audio" /t REG_SZ /d "" /f
@@ -68,6 +68,7 @@
               echo "Installing KakaoTalk..."
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" "\$INSTALLER"
             fi
+            export WINEDLLOVERRIDES="explorer.exe=d"
             WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" \
               "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
             EOF

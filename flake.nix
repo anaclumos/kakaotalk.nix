@@ -19,7 +19,21 @@
       in
       with pkgs; {
         default = self.packages.x86_64-linux.kakaotalk;
-        kakaotalk = stdenv.mkDerivation rec {
+        kakaotalk = 
+          let
+            desktopItem = makeDesktopItem {
+              name = "KakaoTalk";
+              exec = "kakaotalk";
+              icon = "kakaotalk";
+              comment = "A messaging and video calling app";
+              desktopName = "KakaoTalk";
+              terminal = false;
+              type = "Application";
+              categories = [ "Network" "InstantMessaging" ];
+              startupWMClass = "kakaotalk.exe";
+            };
+          in
+          stdenv.mkDerivation rec {
           pname = "kakaotalk";
           version = "0.1.0";
           src = kakaotalk-exe;
@@ -32,20 +46,10 @@
           ];
           
           installPhase = ''
-            mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/applications $out/share/kakaotalk
+            mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/kakaotalk
             cp ${kakaotalk-icon} $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
             cp ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
-            cat > $out/share/applications/KakaoTalk.desktop <<EOF
-            [Desktop Entry]
-            Name=KakaoTalk
-            Comment=A messaging and video calling app
-            Exec=$out/bin/kakaotalk
-            Icon=kakaotalk
-            Terminal=false
-            Type=Application
-            Categories=Network;InstantMessaging;
-            StartupWMClass=kakaotalk.exe
-            EOF
+            cp -r ${desktopItem}/share/applications $out/share/
             cat > $out/bin/kakaotalk <<EOF
             #!/usr/bin/env bash
             PREFIX="\''${XDG_DATA_HOME:-\$HOME/.local/share}/kakaotalk"

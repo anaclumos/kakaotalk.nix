@@ -6,45 +6,36 @@
       flake = false;
     };
     kakaotalk-icon = {
-      url = "https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg";
+      url =
+        "https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg";
       flake = false;
     };
   };
   outputs = { self, nixpkgs, kakaotalk-exe, kakaotalk-icon }: {
     packages.x86_64-linux =
-      let
-        pkgs = import "${nixpkgs}" {
-          system = "x86_64-linux";
-        };
-      in
-      with pkgs; {
+      let pkgs = import "${nixpkgs}" { system = "x86_64-linux"; };
+      in with pkgs; {
         default = self.packages.x86_64-linux.kakaotalk;
-        kakaotalk = 
-          let
-            desktopItem = makeDesktopItem {
-              name = "KakaoTalk";
-              exec = "kakaotalk";
-              icon = "kakaotalk";
-              comment = "A messaging and video calling app";
-              desktopName = "KakaoTalk";
-              terminal = false;
-              type = "Application";
-              categories = [ "Network" "InstantMessaging" ];
-              startupWMClass = "kakaotalk.exe";
-            };
-          in
-          stdenv.mkDerivation rec {
+        kakaotalk = let
+          desktopItem = makeDesktopItem {
+            name = "KakaoTalk";
+            exec = "kakaotalk";
+            icon = "kakaotalk";
+            comment = "A messaging and video calling app";
+            desktopName = "KakaoTalk";
+            terminal = false;
+            type = "Application";
+            categories = [ "Network" "InstantMessaging" ];
+            startupWMClass = "kakaotalk.exe";
+          };
+        in stdenv.mkDerivation rec {
           pname = "kakaotalk";
           version = "0.1.0";
           src = kakaotalk-exe;
           dontUnpack = true;
-          
-          nativeBuildInputs = [
-            makeWrapper
-            wineWowPackages.stable
-            winetricks
-          ];
-          
+
+          nativeBuildInputs = [ makeWrapper wineWowPackages.stable winetricks ];
+
           installPhase = ''
             mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/kakaotalk
             cp ${kakaotalk-icon} $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
@@ -84,7 +75,8 @@
           '';
           meta = with lib; {
             description = "A messaging and video calling app.";
-            homepage = "https://www.kakaocorp.com/page/service/service/KakaoTalk";
+            homepage =
+              "https://www.kakaocorp.com/page/service/service/KakaoTalk";
             license = licenses.unfree;
             platforms = [ "x86_64-linux" ];
           };

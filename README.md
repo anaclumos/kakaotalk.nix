@@ -1,3 +1,5 @@
+> IMPORTANT! On first launch, you must run `kakaotalk` in terminal to install & create desktop item.
+
 # KakaoTalk Nix Flake
 
 This repository packages the Windows version of **KakaoTalk** for NixOS.

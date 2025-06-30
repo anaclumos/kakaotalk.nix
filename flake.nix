@@ -11,9 +11,11 @@
       flake = false;
     };
   };
+
   outputs = { self, nixpkgs, kakaotalk-exe, kakaotalk-icon }: {
     packages.x86_64-linux =
       let pkgs = import "${nixpkgs}" { system = "x86_64-linux"; };
+
       in with pkgs; {
         default = self.packages.x86_64-linux.kakaotalk;
         kakaotalk = let
@@ -37,10 +39,9 @@
           nativeBuildInputs = [ makeWrapper wineWowPackages.stable winetricks ];
 
           installPhase = ''
-            mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/kakaotalk
+            mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/applications $out/share/kakaotalk
             cp ${kakaotalk-icon} $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
             cp ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
-            cp -r ${desktopItem}/share/applications $out/share/
             cat > $out/bin/kakaotalk <<EOF
             #!/usr/bin/env bash
             PREFIX="\''${XDG_DATA_HOME:-\$HOME/.local/share}/kakaotalk"
@@ -68,7 +69,6 @@
               echo "Installing KakaoTalk..."
               WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" "\$INSTALLER"
             fi
-            export WINEDLLOVERRIDES="explorer.exe=d"
             WINEPREFIX="\$PREFIX" "\$WINE_PATH/wine" \
               "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
             EOF

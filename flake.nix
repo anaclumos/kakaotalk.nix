@@ -18,18 +18,7 @@
 
       in with pkgs; {
         default = self.packages.x86_64-linux.kakaotalk;
-        kakaotalk = let
-          desktopItem = makeDesktopItem {
-            name = "KakaoTalk";
-            exec = "kakaotalk %U";
-            icon = "kakaotalk";
-            desktopName = "KakaoTalk";
-            genericName = "Instant Messenger";
-            comment = "A messaging and video calling app";
-            categories = [ "Network" "InstantMessaging" ];
-            mimeTypes = [ "x-scheme-handler/kakaotalk" ];
-          };
-        in stdenv.mkDerivation rec {
+        kakaotalk = stdenv.mkDerivation rec {
           pname = "kakaotalk";
           version = "0.1.0";
           src = kakaotalk-exe;
@@ -84,17 +73,26 @@
             fi
             # Configure font substitutions for emoji support
             if [ ! -f "\$PREFIX/.fonts_configured" ]; then
-              # Set up font substitutions with Pretendard as primary font
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI" /t REG_SZ /d "Pretendard" /f
+              # Replace ALL Windows fonts with Pretendard
+              for font in "Arial" "Arial Black" "Comic Sans MS" "Courier New" "Georgia" "Impact" \
+                         "Lucida Console" "Lucida Sans Unicode" "Microsoft Sans Serif" "Palatino Linotype" \
+                         "Tahoma" "Times New Roman" "Trebuchet MS" "Verdana" "Webdings" "Wingdings" \
+                         "MS Sans Serif" "MS Serif" "MS Gothic" "MS PGothic" "MS UI Gothic" "MS Mincho" \
+                         "MS PMincho" "Gulim" "Dotum" "Batang" "Gungsuh" "GulimChe" "DotumChe" "BatangChe" \
+                         "GungsuhChe" "Malgun Gothic" "Segoe UI" "Segoe UI Symbol" "Segoe Print" \
+                         "Segoe Script" "Calibri" "Cambria" "Candara" "Consolas" "Constantia" "Corbel" \
+                         "Franklin Gothic Medium" "Gabriola" "Garamond" "Century Gothic"; do
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "\$font" /t REG_SZ /d "Pretendard" /f
+              done
+              
+              # Set up font linking for emoji support
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Pretendard" /t REG_MULTI_SZ /d "Noto Color Emoji,Noto Color Emoji.ttf" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Segoe UI" /t REG_MULTI_SZ /d "Pretendard,Pretendard.otf\0Noto Color Emoji,Noto Color Emoji.ttf" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Tahoma" /t REG_MULTI_SZ /d "Pretendard,Pretendard.otf\0Noto Color Emoji,Noto Color Emoji.ttf" /f
+              
+              # Map emoji fonts
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Emoji" /t REG_SZ /d "Noto Color Emoji" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "MS UI Gothic" /t REG_SZ /d "Pretendard" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "MS PGothic" /t REG_SZ /d "Pretendard" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Arial" /t REG_SZ /d "Pretendard" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Tahoma" /t REG_SZ /d "Pretendard" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Malgun Gothic" /t REG_SZ /d "Pretendard" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Gulim" /t REG_SZ /d "Pretendard" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Dotum" /t REG_SZ /d "Pretendard" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Batang" /t REG_SZ /d "Pretendard" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Apple Color Emoji" /t REG_SZ /d "Noto Color Emoji" /f
               
               # Enable font smoothing
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f

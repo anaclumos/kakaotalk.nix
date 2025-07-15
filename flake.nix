@@ -60,7 +60,7 @@
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg delete "HKEY_CURRENT_USER\\Software\\Wine\\Explorer" /v "Desktop" /f 2>/dev/null || true
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Audio" /t REG_SZ /d "" /f
               # Enable clipboard integration
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseXIM" /t REG_SZ /d "N" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseXIM" /t REG_SZ /d "Y" /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UsePrimarySelection" /t REG_SZ /d "N" /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "GrabClipboard" /t REG_SZ /d "Y" /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseSystemClipboard" /t REG_SZ /d "Y" /f
@@ -73,26 +73,25 @@
             fi
             # Configure font substitutions for emoji support
             if [ ! -f "\$PREFIX/.fonts_configured" ]; then
-              # Replace ALL Windows fonts with Pretendard
+              # Replace Windows fonts with Pretendard, but NOT emoji fonts
               for font in "Arial" "Arial Black" "Comic Sans MS" "Courier New" "Georgia" "Impact" \
                          "Lucida Console" "Lucida Sans Unicode" "Microsoft Sans Serif" "Palatino Linotype" \
-                         "Tahoma" "Times New Roman" "Trebuchet MS" "Verdana" "Webdings" "Wingdings" \
+                         "Tahoma" "Times New Roman" "Trebuchet MS" "Verdana" \
                          "MS Sans Serif" "MS Serif" "MS Gothic" "MS PGothic" "MS UI Gothic" "MS Mincho" \
                          "MS PMincho" "Gulim" "Dotum" "Batang" "Gungsuh" "GulimChe" "DotumChe" "BatangChe" \
-                         "GungsuhChe" "Malgun Gothic" "Segoe UI" "Segoe UI Symbol" "Segoe Print" \
+                         "GungsuhChe" "Malgun Gothic" "Segoe UI" "Segoe Print" \
                          "Segoe Script" "Calibri" "Cambria" "Candara" "Consolas" "Constantia" "Corbel" \
                          "Franklin Gothic Medium" "Gabriola" "Garamond" "Century Gothic"; do
                 WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "\$font" /t REG_SZ /d "Pretendard" /f
               done
               
-              # Set up font linking for emoji support
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Pretendard" /t REG_MULTI_SZ /d "Noto Color Emoji,Noto Color Emoji.ttf" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Segoe UI" /t REG_MULTI_SZ /d "Pretendard,Pretendard.otf\0Noto Color Emoji,Noto Color Emoji.ttf" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Tahoma" /t REG_MULTI_SZ /d "Pretendard,Pretendard.otf\0Noto Color Emoji,Noto Color Emoji.ttf" /f
-              
-              # Map emoji fonts
+              # Don't replace symbol/emoji fonts - map them directly to emoji fonts
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Emoji" /t REG_SZ /d "Noto Color Emoji" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Symbol" /t REG_SZ /d "Noto Color Emoji" /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Apple Color Emoji" /t REG_SZ /d "Noto Color Emoji" /f
+              
+              # Set up font linking for emoji support - Pretendard cascades to Noto Color Emoji
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Pretendard" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf" /f
               
               # Enable font smoothing
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f

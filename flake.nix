@@ -124,9 +124,6 @@
               "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
             EOF
             chmod +x $out/bin/kakaotalk
-
-            # Copy the desktop entry from makeDesktopItem
-            cp -r ${desktopItem}/share/applications $out/share/
           '';
           meta = with lib; {
             description = "A messaging and video calling app.";

@@ -21,14 +21,13 @@
         kakaotalk = let
           desktopItem = makeDesktopItem {
             name = "KakaoTalk";
-            exec = "kakaotalk";
+            exec = "kakaotalk %U";
             icon = "kakaotalk";
-            comment = "A messaging and video calling app";
             desktopName = "KakaoTalk";
-            terminal = false;
-            type = "Application";
+            genericName = "Instant Messenger";
+            comment = "A messaging and video calling app";
             categories = [ "Network" "InstantMessaging" ];
-            startupWMClass = "kakaotalk.exe";
+            mimeTypes = [ "x-scheme-handler/kakaotalk" ];
           };
         in stdenv.mkDerivation rec {
           pname = "kakaotalk";
@@ -69,6 +68,13 @@
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseTakeFocus" /t REG_SZ /d "N" /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg delete "HKEY_CURRENT_USER\\Software\\Wine\\Explorer" /v "Desktop" /f 2>/dev/null || true
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Audio" /t REG_SZ /d "" /f
+              # Enable clipboard integration
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseXIM" /t REG_SZ /d "N" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UsePrimarySelection" /t REG_SZ /d "N" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "GrabClipboard" /t REG_SZ /d "Y" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseSystemClipboard" /t REG_SZ /d "Y" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\DragAcceptFiles" /v "Accept" /t REG_DWORD /d 1 /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\OleDropTarget" /v "Enable" /t REG_DWORD /d 1 /f
             fi
             if [ ! -f "\$PREFIX/.winetricks_done" ]; then
               WINEPREFIX="\$PREFIX" ${winetricks}/bin/winetricks corefonts -q
@@ -83,9 +89,8 @@
             EOF
             chmod +x $out/bin/kakaotalk
 
-            # ship the desktop entry we generated with makeDesktopItem
-            install -Dm644 ${desktopItem}/share/applications/*.desktop \
-                           $out/share/applications/KakaoTalk.desktop
+            # Copy the desktop entry from makeDesktopItem
+            cp -r ${desktopItem}/share/applications $out/share/
           '';
           meta = with lib; {
             description = "A messaging and video calling app.";

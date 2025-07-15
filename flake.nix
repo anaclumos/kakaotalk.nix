@@ -36,6 +36,8 @@
           dontUnpack = true;
 
           nativeBuildInputs = [ makeWrapper wineWowPackages.stable winetricks ];
+          
+          buildInputs = [ noto-fonts noto-fonts-cjk-sans noto-fonts-color-emoji ];
 
           installPhase = ''
             mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/applications $out/share/kakaotalk
@@ -79,6 +81,31 @@
             if [ ! -f "\$PREFIX/.winetricks_done" ]; then
               WINEPREFIX="\$PREFIX" ${winetricks}/bin/winetricks corefonts -q
               touch "\$PREFIX/.winetricks_done"
+            fi
+            # Configure font substitutions for emoji support
+            if [ ! -f "\$PREFIX/.fonts_configured" ]; then
+              # Set up font substitutions for better emoji rendering
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI" /t REG_SZ /d "Noto Sans" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Emoji" /t REG_SZ /d "Noto Color Emoji" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "MS UI Gothic" /t REG_SZ /d "Noto Sans CJK KR" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "MS PGothic" /t REG_SZ /d "Noto Sans CJK KR" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Arial" /t REG_SZ /d "Noto Sans" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Tahoma" /t REG_SZ /d "Noto Sans" /f
+              
+              # Enable font smoothing
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingType" /t REG_DWORD /d 2 /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingGamma" /t REG_DWORD /d 1400 /f
+              
+              # Link system fonts to Wine prefix
+              mkdir -p "\$PREFIX/drive_c/windows/Fonts"
+              for font in ${noto-fonts}/share/fonts/truetype/*.ttf ${noto-fonts-cjk-sans}/share/fonts/opentype/*/*.otf ${noto-fonts-color-emoji}/share/fonts/truetype/*.ttf; do
+                if [ -f "\$font" ]; then
+                  ln -sf "\$font" "\$PREFIX/drive_c/windows/Fonts/" 2>/dev/null || true
+                fi
+              done
+              
+              touch "\$PREFIX/.fonts_configured"
             fi
             if [ ! -f "\$PREFIX/drive_c/Program Files (x86)/Kakao/KakaoTalk/KakaoTalk.exe" ]; then
               echo "Installing KakaoTalk..."

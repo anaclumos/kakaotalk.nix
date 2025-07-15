@@ -141,6 +141,7 @@
             rm -f "\$HOME/.local/share/applications/wine/Programs/KakaoTalk/KakaoTalk.desktop" 2>/dev/null
             rm -f "\$HOME/.local/share/applications/wine/Programs/KakaoTalk/카카오톡.desktop" 2>/dev/null
             rm -f "\$HOME/.local/share/applications/wine/Programs/카카오톡/카카오톡.desktop" 2>/dev/null
+            rm -f "\$HOME/.local/share/applications/wine/Programs/카카오톡.desktop" 2>/dev/null
             
             WINEPREFIX="\$PREFIX" "\$WINE_BIN" \
               "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"

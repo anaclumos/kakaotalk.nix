@@ -37,7 +37,7 @@
 
           nativeBuildInputs = [ makeWrapper wineWowPackages.stable winetricks ];
           
-          buildInputs = [ noto-fonts noto-fonts-cjk-sans noto-fonts-color-emoji ];
+          buildInputs = [ pretendard noto-fonts noto-fonts-cjk-sans noto-fonts-color-emoji ];
 
           installPhase = ''
             mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/applications $out/share/kakaotalk
@@ -84,13 +84,17 @@
             fi
             # Configure font substitutions for emoji support
             if [ ! -f "\$PREFIX/.fonts_configured" ]; then
-              # Set up font substitutions for better emoji rendering
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI" /t REG_SZ /d "Noto Sans" /f
+              # Set up font substitutions with Pretendard as primary font
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI" /t REG_SZ /d "Pretendard" /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Emoji" /t REG_SZ /d "Noto Color Emoji" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "MS UI Gothic" /t REG_SZ /d "Noto Sans CJK KR" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "MS PGothic" /t REG_SZ /d "Noto Sans CJK KR" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Arial" /t REG_SZ /d "Noto Sans" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Tahoma" /t REG_SZ /d "Noto Sans" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "MS UI Gothic" /t REG_SZ /d "Pretendard" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "MS PGothic" /t REG_SZ /d "Pretendard" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Arial" /t REG_SZ /d "Pretendard" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Tahoma" /t REG_SZ /d "Pretendard" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Malgun Gothic" /t REG_SZ /d "Pretendard" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Gulim" /t REG_SZ /d "Pretendard" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Dotum" /t REG_SZ /d "Pretendard" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Batang" /t REG_SZ /d "Pretendard" /f
               
               # Enable font smoothing
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f
@@ -99,6 +103,13 @@
               
               # Link system fonts to Wine prefix
               mkdir -p "\$PREFIX/drive_c/windows/Fonts"
+              # Link Pretendard fonts first
+              for font in ${pretendard}/share/fonts/opentype/*.otf ${pretendard}/share/fonts/truetype/*.ttf; do
+                if [ -f "\$font" ]; then
+                  ln -sf "\$font" "\$PREFIX/drive_c/windows/Fonts/" 2>/dev/null || true
+                fi
+              done
+              # Then link Noto fonts for emoji support
               for font in ${noto-fonts}/share/fonts/truetype/*.ttf ${noto-fonts-cjk-sans}/share/fonts/opentype/*/*.otf ${noto-fonts-color-emoji}/share/fonts/truetype/*.ttf; do
                 if [ -f "\$font" ]; then
                   ln -sf "\$font" "\$PREFIX/drive_c/windows/Fonts/" 2>/dev/null || true

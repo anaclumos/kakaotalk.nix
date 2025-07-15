@@ -37,8 +37,13 @@
           dontUnpack = true;
 
           nativeBuildInputs = [ makeWrapper wineWowPackages.stable winetricks ];
-          
-          buildInputs = [ pretendard noto-fonts noto-fonts-cjk-sans noto-fonts-color-emoji ];
+
+          buildInputs = [
+            pretendard
+            noto-fonts
+            noto-fonts-cjk-sans
+            noto-fonts-color-emoji
+          ];
 
           installPhase = ''
             mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/applications $out/share/kakaotalk
@@ -136,16 +141,16 @@
               echo "Installing KakaoTalk..."
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" "\$INSTALLER"
             fi
-            
+
             # Remove the installer-created desktop entries to avoid duplicates
             rm -f "\$HOME/.local/share/applications/wine/Programs/카카오톡.desktop" 2>/dev/null
             rm -f "\$HOME/.local/share/applications/wine/Programs/KakaoTalk.desktop" 2>/dev/null
-            
+
             WINEPREFIX="\$PREFIX" "\$WINE_BIN" \
               "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
             EOF
             chmod +x $out/bin/kakaotalk
-            
+
             # Copy the desktop entry from makeDesktopItem
             cp -r ${desktopItem}/share/applications $out/share/
           '';

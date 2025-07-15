@@ -18,7 +18,19 @@
 
       in with pkgs; {
         default = self.packages.x86_64-linux.kakaotalk;
-        kakaotalk = stdenv.mkDerivation rec {
+        kakaotalk = let
+          desktopItem = makeDesktopItem {
+            name = "kakaotalk";
+            exec = "kakaotalk %U";
+            icon = "kakaotalk";
+            desktopName = "KakaoTalk";
+            genericName = "Instant Messenger";
+            comment = "A messaging and video calling app";
+            categories = [ "Network" "InstantMessaging" ];
+            mimeTypes = [ "x-scheme-handler/kakaotalk" ];
+            startupWMClass = "kakaotalk.exe";
+          };
+        in stdenv.mkDerivation rec {
           pname = "kakaotalk";
           version = "0.1.0";
           src = kakaotalk-exe;
@@ -73,19 +85,24 @@
             fi
             # Configure font substitutions for emoji support
             if [ ! -f "\$PREFIX/.fonts_configured" ]; then
-              # Replace Windows fonts with Pretendard, but NOT emoji fonts
-              for font in "Arial" "Arial Black" "Comic Sans MS" "Courier New" "Georgia" "Impact" \
-                         "Lucida Console" "Lucida Sans Unicode" "Microsoft Sans Serif" "Palatino Linotype" \
-                         "Tahoma" "Times New Roman" "Trebuchet MS" "Verdana" \
-                         "MS Sans Serif" "MS Serif" "MS Gothic" "MS PGothic" "MS UI Gothic" "MS Mincho" \
-                         "MS PMincho" "Gulim" "Dotum" "Batang" "Gungsuh" "GulimChe" "DotumChe" "BatangChe" \
-                         "GungsuhChe" "Malgun Gothic" "Segoe UI" "Segoe Print" \
-                         "Segoe Script" "Calibri" "Cambria" "Candara" "Consolas" "Constantia" "Corbel" \
-                         "Franklin Gothic Medium" "Gabriola" "Garamond" "Century Gothic"; do
+              echo "Configuring font replacements..."
+              
+              # Replace only specific Western fonts with Pretendard
+              # This preserves Korean fonts while updating UI fonts
+              for font in "Arial" "Times New Roman" "Courier New" "Verdana" "Tahoma" \
+                         "Georgia" "Trebuchet MS" "Comic Sans MS" "Impact" \
+                         "Lucida Console" "Lucida Sans Unicode" "Palatino Linotype" \
+                         "Segoe UI" "Segoe Print" "Segoe Script" \
+                         "Calibri" "Cambria" "Candara" "Consolas" "Constantia" "Corbel"; do
                 WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "\$font" /t REG_SZ /d "Pretendard" /f
               done
               
-              # Don't replace symbol/emoji fonts - map them directly to emoji fonts
+              # Ensure Korean fonts use Pretendard which has excellent Korean support
+              for font in "Gulim" "Dotum" "Batang" "Gungsuh" "Malgun Gothic"; do
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "\$font" /t REG_SZ /d "Pretendard" /f
+              done
+              
+              # Map emoji/symbol fonts to Noto Color Emoji
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Emoji" /t REG_SZ /d "Noto Color Emoji" /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Symbol" /t REG_SZ /d "Noto Color Emoji" /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Apple Color Emoji" /t REG_SZ /d "Noto Color Emoji" /f
@@ -119,10 +136,19 @@
               echo "Installing KakaoTalk..."
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" "\$INSTALLER"
             fi
+            
+            # Remove the installer-created desktop entries to avoid duplicates
+            rm -f "\$HOME/.local/share/applications/wine/Programs/KakaoTalk/KakaoTalk.desktop" 2>/dev/null
+            rm -f "\$HOME/.local/share/applications/wine/Programs/KakaoTalk/카카오톡.desktop" 2>/dev/null
+            rm -f "\$HOME/.local/share/applications/wine/Programs/카카오톡/카카오톡.desktop" 2>/dev/null
+            
             WINEPREFIX="\$PREFIX" "\$WINE_BIN" \
               "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
             EOF
             chmod +x $out/bin/kakaotalk
+            
+            # Copy the desktop entry from makeDesktopItem
+            cp -r ${desktopItem}/share/applications $out/share/
           '';
           meta = with lib; {
             description = "A messaging and video calling app.";

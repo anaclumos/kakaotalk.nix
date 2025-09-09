@@ -99,15 +99,10 @@
               WINEBOOT_BIN="${wineWowPackages.stable}/bin/wineboot"
             fi
 
-            # NOTE: Intentionally do not manipulate DPI/scaling to avoid fuzziness.
-            # We set Windows DPI to 96 and let the compositor manage scaling.
 
             if [ ! -d "$PREFIX" ]; then
               mkdir -p "$PREFIX"
               WINEPREFIX="$PREFIX" "$WINEBOOT_BIN" -u
-              # Force standard DPI for all backends to prevent blurry scaling
-              WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d 96 /f
-              WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "96" /f
               WINEPREFIX="$PREFIX" "$WINEBOOT_BIN" -u
               WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f
               WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f
@@ -140,13 +135,7 @@
               touch "$PREFIX/.winetricks_done"
             fi
 
-            # No per-launch DPI adjustments; keep 96 DPI for crisp rendering.
-
-            # Ensure DPI is reset to 96 for existing prefixes as well
-            WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d 96 /f
-            # Remove Win8DpiScaling if present to avoid mixed scaling paths
-            WINEPREFIX="$PREFIX" "$WINE_BIN" reg delete "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "Win8DpiScaling" /f 2>/dev/null || true
-            WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "96" /f
+            
 
             # Ensure a GNOME-friendly tray icon via SNI bridge on Wayland/XWayland
             if command -v pgrep >/dev/null 2>&1; then

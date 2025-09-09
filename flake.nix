@@ -60,7 +60,7 @@
             
             mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/applications $out/share/kakaotalk
             cp ${kakaotalk-icon} $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
-            cp ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
+            cp ${kakaotalk-exe} $out/share/kakaotalk/KakaoTalk_Setup.exe
             
             # Create the kakaotalk script with a temp file first
             cat > kakaotalk-script <<'EOF'

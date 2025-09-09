@@ -105,12 +105,12 @@
               fi
               # GNOME integer scaling
               if command -v gsettings >/dev/null 2>&1; then
-                sf=$(gsettings get org.gnome.desktop.interface scaling-factor 2>/dev/null | tr -dc '0-9')
-                if [ -n "\$sf" ] && [ "\$sf" -gt 0 ]; then
+                sf=$(gsettings get org.gnome.desktop.interface scaling-factor 2>/dev/null | awk '{print $NF}')
+                if [ -n "\$sf" ] && [ "\$sf" -gt 0 ] 2>/dev/null; then
                   printf '%s\n' "\$sf" && return 0
                 fi
                 # As a weak heuristic, fall back to text-scaling-factor if > 1.0
-                tsf=$(gsettings get org.gnome.desktop.interface text-scaling-factor 2>/dev/null | tr -dc '0-9.')
+                tsf=$(gsettings get org.gnome.desktop.interface text-scaling-factor 2>/dev/null | awk '{print $NF}')
                 if [ -n "\$tsf" ]; then
                   # restrict range to reasonable 0.75..3.0
                   awk "BEGIN{v=\$tsf; if(v<0.75)v=0.75; if(v>3.0)v=3.0; print v}"

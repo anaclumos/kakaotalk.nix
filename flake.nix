@@ -36,7 +36,15 @@
           src = kakaotalk-exe;
           dontUnpack = true;
 
-          nativeBuildInputs = [ makeWrapper wineWowPackages.stable winetricks ];
+          # Provide both Wine X11 and Wine Wayland builds and pick at runtime.
+          # This enables better integration on Wayland (focus policy, window management)
+          # while keeping a fallback path to X11/XWayland when needed.
+          nativeBuildInputs = [
+            makeWrapper
+            wineWowPackages.waylandFull
+            wineWowPackages.stable
+            winetricks
+          ];
 
           buildInputs = [
             pretendard
@@ -52,6 +60,25 @@
             cat > $out/bin/kakaotalk <<EOF
             #!/usr/bin/env bash
 
+            # Sensible defaults for Wine performance and fewer prompts/log spam
+            export WINEESYNC="\${WINEESYNC:-1}"
+            export WINEFSYNC="\${WINEFSYNC:-1}"
+            export WINEDEBUG="\${WINEDEBUG:--all}"
+            # Prevent Wine from generating system menu entries and suppress Mono/Gecko popups
+            # (KakaoTalk does not require IE/Mono components for normal operation)
+            export WINEDLLOVERRIDES="\${WINEDLLOVERRIDES:-winemenubuilder.exe=d;mscoree,mshtml=}"
+
+            # Prefer Wayland backend when available; allow manual override
+            # KAKAOTALK_FORCE_BACKEND=wayland|x11
+            BACKEND="\${KAKAOTALK_FORCE_BACKEND:-auto}"
+            if [ "\$BACKEND" = auto ]; then
+              if [ -n "\${WAYLAND_DISPLAY:-}" ]; then
+                BACKEND=wayland
+              else
+                BACKEND=x11
+              fi
+            fi
+
             export GTK_IM_MODULE=fcitx
             export QT_IM_MODULE=fcitx
             export XMODIFIERS=@im=fcitx
@@ -60,8 +87,16 @@
 
             INSTALLER="$out/share/kakaotalk/KakaoTalk_Setup.exe"
 
-            WINE_BIN="${wineWowPackages.stable}/bin/wine"
-            WINEBOOT_BIN="${wineWowPackages.stable}/bin/wineboot"
+            if [ "\$BACKEND" = wayland ]; then
+              WINE_BIN="${wineWowPackages.waylandFull}/bin/wine"
+              WINEBOOT_BIN="${wineWowPackages.waylandFull}/bin/wineboot"
+              # Enable native Wayland surfaces for Vulkan paths as well (if applicable)
+              export WINE_VK_USE_WAYLAND=1
+            else
+              WINE_BIN="${wineWowPackages.stable}/bin/wine"
+              WINEBOOT_BIN="${wineWowPackages.stable}/bin/wineboot"
+            fi
+
             if [ ! -d "\$PREFIX" ]; then
               mkdir -p "\$PREFIX"
               WINEPREFIX="\$PREFIX" "\$WINEBOOT_BIN" -u
@@ -71,9 +106,13 @@
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "InstallLanguage" /t REG_SZ /d "0412" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Decorated" /t REG_SZ /d "Y" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed"   /t REG_SZ /d "Y" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseTakeFocus" /t REG_SZ /d "N" /f
+              # Backend-specific window manager integration tuning
+              if [ "\$BACKEND" = x11 ]; then
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Decorated" /t REG_SZ /d "Y" /f
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed"   /t REG_SZ /d "Y" /f
+                # Reduce focus stealing with X11 driver when toasts appear
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseTakeFocus" /t REG_SZ /d "N" /f
+              fi
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg delete "HKEY_CURRENT_USER\\Software\\Wine\\Explorer" /v "Desktop" /f 2>/dev/null || true
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Audio" /t REG_SZ /d "" /f
               # Enable clipboard integration
@@ -84,8 +123,14 @@
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\DragAcceptFiles" /v "Accept" /t REG_DWORD /d 1 /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\OleDropTarget" /v "Enable" /t REG_DWORD /d 1 /f
             fi
+            # Support a simple quit action from desktop entry
+            if [ "\${1:-}" = "--quit" ] || [ "\${1:-}" = "--kill" ]; then
+              WINEPREFIX="\$PREFIX" "${wineWowPackages.stable}/bin/wineserver" -k || true
+              exit 0
+            fi
             if [ ! -f "\$PREFIX/.winetricks_done" ]; then
-              WINEPREFIX="\$PREFIX" ${winetricks}/bin/winetricks corefonts -q
+              # Fonts and common runtime bits known to help with UI rendering
+              WINEPREFIX="\$PREFIX" ${winetricks}/bin/winetricks -q corefonts gdiplus
               touch "\$PREFIX/.winetricks_done"
             fi
             # Configure font substitutions for emoji support
@@ -151,8 +196,24 @@
             EOF
             chmod +x $out/bin/kakaotalk
 
-            # Copy the desktop entry from makeDesktopItem
+            # Copy and lightly augment the desktop entry from makeDesktopItem
             cp -r ${desktopItem}/share/applications $out/share/
+            # Add common desktop hints
+            sed -i \
+              -e '/^Exec=/a TryExec=kakaotalk' \
+              -e '/^Exec=/a StartupNotify=true' \
+              -e '/^Exec=/a X-GNOME-UsesNotifications=true' \
+              $out/share/applications/kakaotalk.desktop
+            # Add a Quit action that cleanly terminates the Wine server for this prefix
+            if ! grep -q '^Actions=' $out/share/applications/kakaotalk.desktop; then
+              echo 'Actions=Quit;' >> $out/share/applications/kakaotalk.desktop
+            fi
+            cat >> $out/share/applications/kakaotalk.desktop <<'DESK'
+
+[Desktop Action Quit]
+Name=Quit
+Exec=kakaotalk --quit
+DESK
           '';
           meta = with lib; {
             description = "A messaging and video calling app.";

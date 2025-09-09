@@ -59,7 +59,7 @@
             cp ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
             
             # Create the kakaotalk script with a temp file first
-            cat > kakaotalk-script <<EOF
+            cat > kakaotalk-script <<'EOF'
             #!/usr/bin/env bash
 
             # Sensible defaults for Wine performance and fewer prompts/log spam
@@ -244,7 +244,7 @@
 
             WINEPREFIX="\$PREFIX" "\$WINE_BIN" \
               "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
-            EOF
+EOF
             
             # Install the script with proper permissions
             install -D -m 755 kakaotalk-script $out/bin/kakaotalk

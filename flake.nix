@@ -250,7 +250,11 @@ EOF
             install -D -m 755 kakaotalk-script $out/bin/kakaotalk
 
             # Copy and lightly augment the desktop entry from makeDesktopItem
-            cp -r ${desktopItem}/share/applications $out/share/
+            mkdir -p $out/share/applications
+            install -m 0644 ${desktopItem}/share/applications/kakaotalk.desktop \
+              $out/share/applications/kakaotalk.desktop
+            # Make writable during in-place edits
+            chmod u+w $out/share/applications/kakaotalk.desktop
             # Add common desktop hints
             sed -i \
               -e '/^Exec=/a TryExec=kakaotalk' \

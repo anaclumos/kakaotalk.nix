@@ -74,9 +74,11 @@
             # (KakaoTalk does not require IE/Mono components for normal operation)
             export WINEDLLOVERRIDES="''${WINEDLLOVERRIDES:-winemenubuilder.exe=d;mscoree,mshtml=}"
             
-            # Disable Wine DPI scaling to prevent fuzzy/blurry display
-            export WINEDPI="''${WINEDPI:-96}"
-            export WINE_DISABLE_AUTOSCALE="''${WINE_DISABLE_AUTOSCALE:-1}"
+            # Ensure host toolkits don't apply extra scaling
+            export GDK_SCALE=1
+            export GDK_DPI_SCALE=1
+            export QT_AUTO_SCREEN_SCALE_FACTOR=0
+            export QT_SCALE_FACTOR=1
 
             # Prefer Wayland backend when available; allow manual override
             # KAKAOTALK_FORCE_BACKEND=wayland|x11
@@ -116,10 +118,6 @@
               WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f
               WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "InstallLanguage" /t REG_SZ /d "0412" /f
               
-              # Disable DPI scaling to prevent fuzzy display
-              WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d 96 /f
-              WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts" /v "LogPixels" /t REG_DWORD /d 96 /f
-              WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Hardware Profiles\\Current\\Software\\Fonts" /v "LogPixels" /t REG_DWORD /d 96 /f
               
               # Backend-specific window manager integration tuning
               if [ "$BACKEND" = x11 ]; then

@@ -12,12 +12,14 @@
     };
   };
 
-  outputs = { self, nixpkgs, kakaotalk-exe, kakaotalk-icon }: {
-    packages.x86_64-linux =
-      let pkgs = import "${nixpkgs}" { system = "x86_64-linux"; };
-
-      in with pkgs; {
-        default = self.packages.x86_64-linux.kakaotalk;
+  outputs = { self, nixpkgs, kakaotalk-exe, kakaotalk-icon }:
+    let
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
+    in
+    {
+    packages.${system} = with pkgs; {
+        default = self.packages.${system}.kakaotalk;
         kakaotalk = let
           desktopItem = makeDesktopItem {
             name = "kakaotalk";
@@ -30,7 +32,7 @@
             mimeTypes = [ "x-scheme-handler/kakaotalk" ];
             startupWMClass = "kakaotalk.exe";
           };
-        in stdenv.mkDerivation rec {
+        in stdenv.mkDerivation {
           pname = "kakaotalk";
           version = "0.1.0";
           src = kakaotalk-exe;
@@ -54,6 +56,8 @@
           ];
 
           installPhase = ''
+            runHook preInstall
+            
             mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/applications $out/share/kakaotalk
             cp ${kakaotalk-icon} $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
             cp ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
@@ -69,6 +73,10 @@
             # Prevent Wine from generating system menu entries and suppress Mono/Gecko popups
             # (KakaoTalk does not require IE/Mono components for normal operation)
             export WINEDLLOVERRIDES="''${WINEDLLOVERRIDES:-winemenubuilder.exe=d;mscoree,mshtml=}"
+            
+            # Disable Wine DPI scaling to prevent fuzzy/blurry display
+            export WINEDPI="''${WINEDPI:-96}"
+            export WINE_DISABLE_AUTOSCALE="''${WINE_DISABLE_AUTOSCALE:-1}"
 
             # Prefer Wayland backend when available; allow manual override
             # KAKAOTALK_FORCE_BACKEND=wayland|x11
@@ -107,6 +115,12 @@
               WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f
               WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f
               WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "InstallLanguage" /t REG_SZ /d "0412" /f
+              
+              # Disable DPI scaling to prevent fuzzy display
+              WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d 96 /f
+              WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts" /v "LogPixels" /t REG_DWORD /d 96 /f
+              WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Hardware Profiles\\Current\\Software\\Fonts" /v "LogPixels" /t REG_DWORD /d 96 /f
+              
               # Backend-specific window manager integration tuning
               if [ "$BACKEND" = x11 ]; then
                 WINEPREFIX="$PREFIX" "$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Decorated" /t REG_SZ /d "Y" /f
@@ -233,20 +247,26 @@ EOF
 Name=Quit
 Exec=kakaotalk --quit
 DESK
+            
+            runHook postInstall
           '';
+          
           meta = with lib; {
             description = "A messaging and video calling app.";
             homepage =
               "https://www.kakaocorp.com/page/service/service/KakaoTalk";
             license = licenses.unfree;
             platforms = [ "x86_64-linux" ];
+            maintainers = [ ];
           };
         };
       };
-    apps.x86_64-linux.kakaotalk = {
-      type = "app";
-      program = "${self.packages.x86_64-linux.kakaotalk}/bin/kakaotalk";
+    apps.${system} = {
+      kakaotalk = {
+        type = "app";
+        program = "${self.packages.${system}.kakaotalk}/bin/kakaotalk";
+      };
+      default = self.apps.${system}.kakaotalk;
     };
-    apps.x86_64-linux.default = self.apps.x86_64-linux.kakaotalk;
   };
 }

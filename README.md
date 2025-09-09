@@ -36,17 +36,21 @@ This repository packages the Windows version of **KakaoTalk** for NixOS.
 
 If you're interested in how it actually works in NixOS, see: https://github.com/anaclumos/nixos
 
-## Best Practices (Wayland, Notifications, Stability)
+## Best Practices (Wayland, Scaling, Notifications)
 
-- Wayland backend: The launcher prefers Wine-Wayland when `WAYLAND_DISPLAY` is present. This gives better window management (no aggressive focus stealing) and fewer rendering glitches on GNOME Wayland. To force a backend:
+- Wayland backend: The launcher prefers Wine-Wayland when `WAYLAND_DISPLAY` is present. This gives better window management and fewer rendering glitches on GNOME Wayland. To force a backend:
   - Wayland: `KAKAOTALK_FORCE_BACKEND=wayland kakaotalk`
   - X11/XWayland (fallback): `KAKAOTALK_FORCE_BACKEND=x11 kakaotalk`
+
+- Scaling on Wayland: The launcher syncs Wine DPI with your GNOME scale. It reads the GNOME interface scaling factor; if unavailable, it falls back to 1. You can override:
+  - Exact DPI: `KAKAOTALK_DPI=144 kakaotalk` (e.g., 150% is 144)
+  - Scale factor: `KAKAOTALK_SCALE=1.25 kakaotalk` (DPI auto = 96*scale)
 
 - GNOME notifications: KakaoTalk is a Windows app and shows its own in-app toasts; it does not emit native GNOME notifications. To avoid “window pops to front” behavior, keep notifications enabled in KakaoTalk but disable any “bring to front on alert” option inside the app if available. System-native notifications are not available via Wine.
 
 - System tray and close button: KakaoTalk typically minimizes to the system tray when pressing the close button. On GNOME Wayland you need the AppIndicator/KStatusNotifier extension to see the tray icon and restore/exit cleanly. Install “AppIndicator and KStatusNotifierItem Support”. Without it, use `wineserver -k` to fully quit.
 
-- Rendering artifacts: The package enables Wine esync/fsync and installs `gdiplus` and core fonts automatically. Prefer the Wayland backend; if you still see glitches, try the X11 fallback (`KAKAOTALK_FORCE_BACKEND=x11`).
+- Rendering artifacts: The package enables Wine esync/fsync and installs `gdiplus` and core fonts automatically. Prefer the Wayland backend; if you still see glitches, try the X11 fallback (`KAKAOTALK_FORCE_BACKEND=x11`). Scaling is re-applied every launch on Wayland.
 
 - Performance toggles: `WINEESYNC=1` and `WINEFSYNC=1` are enabled by default. They improve responsiveness but require kernel/futex support; if you encounter instability, set them to `0` when launching.
 

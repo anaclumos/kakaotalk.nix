@@ -97,11 +97,52 @@
               WINEBOOT_BIN="${wineWowPackages.stable}/bin/wineboot"
             fi
 
+            # Determine DPI/scale for Wayland so content size matches GNOME scaling
+            compute_scale() {
+              # Overrides take precedence
+              if [ -n "\${KAKAOTALK_SCALE:-}" ]; then
+                printf '%s\n' "\$KAKAOTALK_SCALE" && return 0
+              fi
+              # GNOME integer scaling
+              if command -v gsettings >/dev/null 2>&1; then
+                sf=$(gsettings get org.gnome.desktop.interface scaling-factor 2>/dev/null | tr -dc '0-9')
+                if [ -n "\$sf" ] && [ "\$sf" -gt 0 ]; then
+                  printf '%s\n' "\$sf" && return 0
+                fi
+                # As a weak heuristic, fall back to text-scaling-factor if > 1.0
+                tsf=$(gsettings get org.gnome.desktop.interface text-scaling-factor 2>/dev/null | tr -dc '0-9.')
+                if [ -n "\$tsf" ]; then
+                  # restrict range to reasonable 0.75..3.0
+                  awk "BEGIN{v=\$tsf; if(v<0.75)v=0.75; if(v>3.0)v=3.0; print v}"
+                  return 0
+                fi
+              fi
+              # Default scale
+              printf '1\n'
+            }
+
+            compute_dpi() {
+              if [ -n "\${KAKAOTALK_DPI:-}" ]; then
+                printf '%s\n' "\$KAKAOTALK_DPI" && return 0
+              fi
+              sc=$(compute_scale)
+              # dpi = round(96 * scale)
+              awk "BEGIN{print int(96*\$sc + 0.5)}"
+            }
+
             if [ ! -d "\$PREFIX" ]; then
               mkdir -p "\$PREFIX"
               WINEPREFIX="\$PREFIX" "\$WINEBOOT_BIN" -u
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d 96 /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "96" /f
+              if [ "\$BACKEND" = x11 ]; then
+                # Force a standard DPI when using X11 and let the WM handle window size
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d 96 /f
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "96" /f
+              else
+                # For Wayland, align Windows DPI with compositor scale
+                DPI_VAL=$(compute_dpi)
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d "\$DPI_VAL" /f
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "Win8DpiScaling" /t REG_DWORD /d 1 /f
+              fi
               WINEPREFIX="\$PREFIX" "\$WINEBOOT_BIN" -u
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f
@@ -132,6 +173,14 @@
               # Fonts and common runtime bits known to help with UI rendering
               WINEPREFIX="\$PREFIX" ${winetricks}/bin/winetricks -q corefonts gdiplus
               touch "\$PREFIX/.winetricks_done"
+            fi
+
+            # On Wayland, refresh DPI on every launch so changes to display scaling
+            # are reflected without recreating the prefix.
+            if [ "\$BACKEND" = wayland ]; then
+              DPI_VAL=$(compute_dpi)
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d "\$DPI_VAL" /f
+              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "Win8DpiScaling" /t REG_DWORD /d 1 /f
             fi
             # Configure font substitutions for emoji support
             if [ ! -f "\$PREFIX/.fonts_configured" ]; then

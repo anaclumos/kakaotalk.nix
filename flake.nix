@@ -57,7 +57,9 @@
             mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/applications $out/share/kakaotalk
             cp ${kakaotalk-icon} $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
             cp ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
-            cat > $out/bin/kakaotalk <<EOF
+            
+            # Create the kakaotalk script with a temp file first
+            cat > kakaotalk-script <<EOF
             #!/usr/bin/env bash
 
             # Sensible defaults for Wine performance and fewer prompts/log spam
@@ -243,7 +245,9 @@
             WINEPREFIX="\$PREFIX" "\$WINE_BIN" \
               "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
             EOF
-            chmod +x $out/bin/kakaotalk
+            
+            # Install the script with proper permissions
+            install -D -m 755 kakaotalk-script $out/bin/kakaotalk
 
             # Copy and lightly augment the desktop entry from makeDesktopItem
             cp -r ${desktopItem}/share/applications $out/share/

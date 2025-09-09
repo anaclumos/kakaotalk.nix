@@ -87,7 +87,7 @@
 
             PREFIX="\''${XDG_DATA_HOME:-\$HOME/.local/share}/kakaotalk"
 
-            INSTALLER="$out/share/kakaotalk/KakaoTalk_Setup.exe"
+            INSTALLER="__INSTALLER__"
 
             if [ "\$BACKEND" = wayland ]; then
               WINE_BIN="${wineWowPackages.waylandFull}/bin/wine"
@@ -246,7 +246,8 @@
               "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
 EOF
             
-            # Install the script with proper permissions
+            # Replace placeholders with store paths and install the script
+            sed -i "s|__INSTALLER__|$out/share/kakaotalk/KakaoTalk_Setup.exe|g" kakaotalk-script
             install -D -m 755 kakaotalk-script $out/bin/kakaotalk
 
             # Copy and lightly augment the desktop entry from makeDesktopItem

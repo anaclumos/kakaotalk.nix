@@ -61,18 +61,18 @@
             #!/usr/bin/env bash
 
             # Sensible defaults for Wine performance and fewer prompts/log spam
-            export WINEESYNC="\${WINEESYNC:-1}"
-            export WINEFSYNC="\${WINEFSYNC:-1}"
-            export WINEDEBUG="\${WINEDEBUG:--all}"
+            export WINEESYNC="\''${WINEESYNC:-1}"
+            export WINEFSYNC="\''${WINEFSYNC:-1}"
+            export WINEDEBUG="\''${WINEDEBUG:--all}"
             # Prevent Wine from generating system menu entries and suppress Mono/Gecko popups
             # (KakaoTalk does not require IE/Mono components for normal operation)
-            export WINEDLLOVERRIDES="\${WINEDLLOVERRIDES:-winemenubuilder.exe=d;mscoree,mshtml=}"
+            export WINEDLLOVERRIDES="\''${WINEDLLOVERRIDES:-winemenubuilder.exe=d;mscoree,mshtml=}"
 
             # Prefer Wayland backend when available; allow manual override
             # KAKAOTALK_FORCE_BACKEND=wayland|x11
-            BACKEND="\${KAKAOTALK_FORCE_BACKEND:-auto}"
+            BACKEND="\''${KAKAOTALK_FORCE_BACKEND:-auto}"
             if [ "\$BACKEND" = auto ]; then
-              if [ -n "\${WAYLAND_DISPLAY:-}" ]; then
+              if [ -n "\''${WAYLAND_DISPLAY:-}" ]; then
                 BACKEND=wayland
               else
                 BACKEND=x11
@@ -100,7 +100,7 @@
             # Determine DPI/scale for Wayland so content size matches GNOME scaling
             compute_scale() {
               # Overrides take precedence
-              if [ -n "\${KAKAOTALK_SCALE:-}" ]; then
+              if [ -n "\''${KAKAOTALK_SCALE:-}" ]; then
                 printf '%s\n' "\$KAKAOTALK_SCALE" && return 0
               fi
               # GNOME integer scaling
@@ -122,7 +122,7 @@
             }
 
             compute_dpi() {
-              if [ -n "\${KAKAOTALK_DPI:-}" ]; then
+              if [ -n "\''${KAKAOTALK_DPI:-}" ]; then
                 printf '%s\n' "\$KAKAOTALK_DPI" && return 0
               fi
               sc=$(compute_scale)
@@ -165,7 +165,7 @@
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\OleDropTarget" /v "Enable" /t REG_DWORD /d 1 /f
             fi
             # Support a simple quit action from desktop entry
-            if [ "\${1:-}" = "--quit" ] || [ "\${1:-}" = "--kill" ]; then
+            if [ "\''${1:-}" = "--quit" ] || [ "\''${1:-}" = "--kill" ]; then
               WINEPREFIX="\$PREFIX" "${wineWowPackages.stable}/bin/wineserver" -k || true
               exit 0
             fi

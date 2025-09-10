@@ -49,12 +49,23 @@
             mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/applications $out/share/kakaotalk
             cp ${kakaotalk-icon} $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
             cp ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
-            cat > $out/bin/kakaotalk <<EOF
+            cat > $out/bin/kakaotalk <<'EOF'
             #!/usr/bin/env bash
 
             export GTK_IM_MODULE=fcitx
             export QT_IM_MODULE=fcitx
             export XMODIFIERS=@im=fcitx
+            export GTK_USE_PORTAL=
+            : "
+              Respect host portals for dialogs where possible. While Wine apps
+              do not directly use portals, this helps when helpers are spawned.
+            "
+
+            # Performance toggles (can be overridden by environment)
+            export WINEESYNC="
+            ${WINEESYNC:-1}"
+            export WINEFSYNC="${WINEFSYNC:-1}"
+            export WINEDEBUG="${WINEDEBUG:--all}"
 
             PREFIX="\''${XDG_DATA_HOME:-\$HOME/.local/share}/kakaotalk"
 
@@ -62,27 +73,63 @@
 
             WINE_BIN="${wineWowPackages.stable}/bin/wine"
             WINEBOOT_BIN="${wineWowPackages.stable}/bin/wineboot"
+
+            # Decide backend: wayland when forced or available, else x11
+            BACKEND="\${KAKAOTALK_FORCE_BACKEND:-}"
+            if [ -z "\$BACKEND" ]; then
+              if [ -n "\$WAYLAND_DISPLAY" ]; then
+                BACKEND=wayland
+              else
+                BACKEND=x11
+              fi
+            fi
+
+            # Helper to set Wine graphics driver
+            set_wine_graphics_driver() {
+              local driver="\$1"
+              case "\$driver" in
+                wayland)
+                  WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add \
+                    "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" \
+                    /v "Graphics" /t REG_SZ /d "wayland" /f >/dev/null 2>&1 || true
+                  ;;
+                x11|*)
+                  WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add \
+                    "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" \
+                    /v "Graphics" /t REG_SZ /d "x11" /f >/dev/null 2>&1 || true
+                  ;;
+              esac
+            }
             if [ ! -d "\$PREFIX" ]; then
               mkdir -p "\$PREFIX"
               WINEPREFIX="\$PREFIX" "\$WINEBOOT_BIN" -u
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d 96 /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "96" /f
+              # X11-specific DPI is set only when using X11 backend
+              if [ "\$BACKEND" = x11 ]; then
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "96" /f
+              fi
               WINEPREFIX="\$PREFIX" "\$WINEBOOT_BIN" -u
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "InstallLanguage" /t REG_SZ /d "0412" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Decorated" /t REG_SZ /d "Y" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed"   /t REG_SZ /d "Y" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseTakeFocus" /t REG_SZ /d "N" /f
+              if [ "\$BACKEND" = x11 ]; then
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Decorated" /t REG_SZ /d "Y" /f
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed"   /t REG_SZ /d "Y" /f
+                # Reduce focus stealing on X11/XWayland
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseTakeFocus" /t REG_SZ /d "N" /f
+              fi
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg delete "HKEY_CURRENT_USER\\Software\\Wine\\Explorer" /v "Desktop" /f 2>/dev/null || true
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Audio" /t REG_SZ /d "" /f
               # Enable clipboard integration
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseXIM" /t REG_SZ /d "Y" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UsePrimarySelection" /t REG_SZ /d "N" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "GrabClipboard" /t REG_SZ /d "Y" /f
-              WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseSystemClipboard" /t REG_SZ /d "Y" /f
+              if [ "\$BACKEND" = x11 ]; then
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseXIM" /t REG_SZ /d "Y" /f
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UsePrimarySelection" /t REG_SZ /d "N" /f
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "GrabClipboard" /t REG_SZ /d "Y" /f
+                WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseSystemClipboard" /t REG_SZ /d "Y" /f
+              fi
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\DragAcceptFiles" /v "Accept" /t REG_DWORD /d 1 /f
               WINEPREFIX="\$PREFIX" "\$WINE_BIN" reg add "HKEY_CURRENT_USER\\Software\\Wine\\OleDropTarget" /v "Enable" /t REG_DWORD /d 1 /f
+              set_wine_graphics_driver "\$BACKEND"
             fi
             if [ ! -f "\$PREFIX/.winetricks_done" ]; then
               WINEPREFIX="\$PREFIX" ${winetricks}/bin/winetricks corefonts -q
@@ -145,7 +192,10 @@
             # Remove the installer-created desktop entries to avoid duplicates
             rm -f "\$HOME/.local/share/applications/wine/Programs/카카오톡.desktop" 2>/dev/null
             rm -f "\$HOME/.local/share/applications/wine/Programs/KakaoTalk.desktop" 2>/dev/null
+            # Ensure graphics driver preference is set at every launch
+            set_wine_graphics_driver "\$BACKEND"
 
+            # Launch
             WINEPREFIX="\$PREFIX" "\$WINE_BIN" \
               "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "\$@"
             EOF

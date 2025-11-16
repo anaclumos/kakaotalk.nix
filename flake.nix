@@ -12,12 +12,13 @@
     };
   };
 
-  outputs = { self, nixpkgs, kakaotalk-exe, kakaotalk-icon }: {
-    packages.x86_64-linux =
-      let pkgs = import "${nixpkgs}" { system = "x86_64-linux"; };
-
-      in with pkgs; {
-        default = self.packages.x86_64-linux.kakaotalk;
+  outputs = { self, nixpkgs, kakaotalk-exe, kakaotalk-icon }:
+    let
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
+    in {
+      packages.${system} = with pkgs; {
+        default = self.packages.${system}.kakaotalk;
         kakaotalk = let
           desktopItem = makeDesktopItem {
             name = "kakaotalk";
@@ -237,10 +238,10 @@
           };
         };
       };
-    apps.x86_64-linux.kakaotalk = {
-      type = "app";
-      program = "${self.packages.x86_64-linux.kakaotalk}/bin/kakaotalk";
+      apps.${system}.kakaotalk = {
+        type = "app";
+        program = "${self.packages.${system}.kakaotalk}/bin/kakaotalk";
+      };
+      apps.${system}.default = self.apps.${system}.kakaotalk;
     };
-    apps.x86_64-linux.default = self.apps.x86_64-linux.kakaotalk;
-  };
 }

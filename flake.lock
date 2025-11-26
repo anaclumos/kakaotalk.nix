@@ -3,7 +3,7 @@
     "kakaotalk-exe": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-h8zIdf2vCdZeC1fiFga1XeHUdoq/Bq+RAvqgEz4qK1U=",
+        "narHash": "sha256-+K71T9Je8OICYfTfXxTPpcD4X8PNw7GbRVBcKniu+/A=",
         "type": "file",
         "url": "https://app-pc.kakaocdn.net/talk/win32/KakaoTalk_Setup.exe"
       },

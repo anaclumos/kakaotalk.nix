@@ -21,7 +21,8 @@ This repository packages the Windows version of **KakaoTalk** for NixOS.
 
 ## Installation
 
-> IMPORTANT! On first launch, you must run `kakaotalk` in terminal to install & create desktop item.
+> [!IMPORTANT]
+> On first launch, you must run `kakaotalk` in terminal to install & create desktop item.
 
 | Step | Description | Screenshot |
 |------|-------------|------------|
@@ -34,42 +35,7 @@ This repository packages the Windows version of **KakaoTalk** for NixOS.
 | 7 | Confirm by clicking the left button. | ![Image](https://github.com/user-attachments/assets/45594ecc-3c06-461b-9ccc-1c4025825c20) |
 | 8 | Korean text should display correctly without manual font selection. | ![Image](https://github.com/user-attachments/assets/247eb319-dfbd-40e8-8448-88501ea04d5f) |
 
-If you're interested in how it actually works in NixOS, see: https://github.com/anaclumos/nixos
-
-## Best Practices (GNOME Wayland, Bottles, Notifications)
-
-- Wayland vs X11 backend:
-  - The launcher now prefers the Wine Wayland driver when `WAYLAND_DISPLAY` exists and falls back to X11/XWayland otherwise. Force it explicitly with:
-    - Wayland: `KAKAOTALK_FORCE_BACKEND=wayland kakaotalk`
-    - X11: `KAKAOTALK_FORCE_BACKEND=x11 kakaotalk`
-  - Why Wayland: prevents focus‑stealing and generally plays nicer with GNOME window management. If your Wine build lacks the Wayland driver, the wrapper will harmlessly fall back to X11.
-
-- Focus behavior on GNOME:
-  - Prefer Wayland backend (above). On X11, the wrapper sets Wine’s `UseTakeFocus=N` to reduce focus stealing, but some apps may still raise themselves.
-  - System‑wide option to be stricter: `gsettings set org.gnome.mutter focus-new-windows 'strict'` (keeps new/urgent windows from stealing focus).
-
-- GNOME notifications:
-  - KakaoTalk on Wine does not emit native GNOME notifications; it shows in‑app toasts. There is no reliable Wine bridge to GNOME’s `org.freedesktop.Notifications` yet.
-  - To avoid the app popping to front on message alerts, keep KakaoTalk’s notifications on but disable any “bring to front on alert”/“focus on new message” options in the app settings.
-  - Tray restoration requires the GNOME extension “AppIndicator and KStatusNotifierItem Support”. Without it, use `wineserver -k` to quit fully.
-
-- Bottles (optional integration):
-  - If you prefer managing the prefix with Bottles (Flatpak or system), create a new Bottle (type: Application), enable esync/fsync, DXVK, and Wayland support if offered by your Bottles runner.
-  - Install KakaoTalk into that Bottle (use the same Windows installer URL). Then run via `bottles-cli run -b "KakaoTalk" -- "KakaoTalk"`.
-  - Bottles doesn’t magically provide native GNOME notifications for Windows apps, but it often ships newer Wine(-GE/staging) with the Wayland driver which improves focus behavior.
-
-- DPI/Scaling:
-  - The launcher avoids forcing DPI inside Wine; aim for integer display scales (100%/200%) on Wayland for crisp text, and use KakaoTalk’s in‑app scaling if needed.
-  - If fractional scaling artifacts occur, try the X11 fallback: `KAKAOTALK_FORCE_BACKEND=x11 kakaotalk`.
-
-- Rendering & performance:
-  - Esync/fsync are enabled by default via env. Set `WINEESYNC=0 WINEFSYNC=0` to troubleshoot if you hit instability.
-  - Ensure 32‑bit graphics are enabled on NixOS so Wine can run 32‑bit GUI apps:
-    - `hardware.graphics.enable = true;`
-    - `hardware.graphics.enable32Bit = true;`
-
-- Input method:
-  - The launcher exports `GTK_IM_MODULE/QT_IM_MODULE/XMODIFIERS=fcitx`. Enable and configure fcitx5 on NixOS for proper IME.
+If you're interested in how it actually works in NixOS, see: https://github.com/anaclumos/nix
 
 ## Uninstalling
 

@@ -119,12 +119,20 @@ if [ ! -f "$PREFIX/.fonts_configured" ]; then
   done
   
   # Emoji mapping
+  # Note: Wine requires proper key names. "Noto Color Emoji" must match the internal font name.
   "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Emoji" /t REG_SZ /d "Noto Color Emoji" /f
   "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Symbol" /t REG_SZ /d "Noto Color Emoji" /f
   "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Apple Color Emoji" /t REG_SZ /d "Noto Color Emoji" /f
-  
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Color Emoji" /t REG_SZ /d "Noto Color Emoji" /f
+
   # Font linking
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Pretendard" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf" /f
+  # Critical for fallback. Noto Color Emoji often fails if not explicitly linked.
+  # We link both Noto Color Emoji and CJK fonts to Pretendard/system fallback.
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Pretendard" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Noto Sans CJK KR,NotoSansCJKkr-Regular.otf\0Noto Serif CJK KR,NotoSerifCJKkr-Regular.otf" /f
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Tahoma" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Segoe UI" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Malgun Gothic" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Microsoft Sans Serif" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f
   
   # Font smoothing
   "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f
@@ -135,8 +143,11 @@ if [ ! -f "$PREFIX/.fonts_configured" ]; then
   mkdir -p "$PREFIX/drive_c/windows/Fonts"
   
   # Link provided fonts
-  find @fontPath@ -name "*.ttf" -o -name "*.otf" | while read -r font; do
-    ln -sf "$font" "$PREFIX/drive_c/windows/Fonts/" 2>/dev/null || true
+  # Using find with -exec ln is safer but loop is fine here.
+  # Ensure we follow symlinks if fontPath is a symlink forest (it is).
+  find -H @fontPath@ -type f \( -name "*.ttf" -o -name "*.otf" \) | while read -r font; do
+    name=$(basename "$font")
+    ln -sf "$font" "$PREFIX/drive_c/windows/Fonts/$name" 2>/dev/null || true
   done
   
   touch "$PREFIX/.fonts_configured"

@@ -18,19 +18,34 @@
       pkgs = nixpkgs.legacyPackages.${system};
 
       westernFonts = [
-        "Arial" "Times New Roman" "Courier New" "Verdana" "Tahoma"
-        "Georgia" "Trebuchet MS" "Comic Sans MS" "Impact"
-        "Lucida Console" "Lucida Sans Unicode" "Palatino Linotype"
-        "Segoe UI" "Segoe Print" "Segoe Script"
-        "Calibri" "Cambria" "Candara" "Consolas" "Constantia" "Corbel"
-      ];
-      
-      koreanFonts = [
-        "Gulim" "Dotum" "Batang" "Gungsuh" "Malgun Gothic"
+        "Arial"
+        "Times New Roman"
+        "Courier New"
+        "Verdana"
+        "Tahoma"
+        "Georgia"
+        "Trebuchet MS"
+        "Comic Sans MS"
+        "Impact"
+        "Lucida Console"
+        "Lucida Sans Unicode"
+        "Palatino Linotype"
+        "Segoe UI"
+        "Segoe Print"
+        "Segoe Script"
+        "Calibri"
+        "Cambria"
+        "Candara"
+        "Consolas"
+        "Constantia"
+        "Corbel"
       ];
 
+      koreanFonts = [ "Gulim" "Dotum" "Batang" "Gungsuh" "Malgun Gothic" ];
+
       # Helper to quote list elements for shell usage
-      quoteList = list: pkgs.lib.concatMapStringsSep " " (x: "\"" + x + "\"") list;
+      quoteList = list:
+        pkgs.lib.concatMapStringsSep " " (x: ''"'' + x + ''"'') list;
 
     in {
       packages.${system} = with pkgs; {
@@ -47,15 +62,16 @@
             mimeTypes = [ "x-scheme-handler/kakaotalk" ];
             startupWMClass = "kakaotalk.exe";
           };
-          
+
           # Combine all fonts we want to link
           fontPackages = [
             pretendard
             noto-fonts
             noto-fonts-cjk-sans
+            noto-fonts-cjk-serif
             noto-fonts-color-emoji
           ];
-          
+
           # Create a symlink join of all fonts to make them easily accessible in one path
           fontPath = symlinkJoin {
             name = "kakaotalk-fonts";
@@ -68,25 +84,26 @@
           src = kakaotalk-exe;
           dontUnpack = true;
 
-          nativeBuildInputs = [ makeWrapper wineWowPackages.stable winetricks copyDesktopItems ];
+          nativeBuildInputs =
+            [ makeWrapper wineWowPackages.stable winetricks copyDesktopItems ];
 
           # Pass variables to substituteAll
           # We manually invoke substituteAll in installPhase for flexibility or use stdenv's hook if we made it a separate derivation, 
           # but here we can just substitute the script directly.
-          
+
           installPhase = ''
             runHook preInstall
 
             mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/kakaotalk
-            
+
             # Install resources
             cp ${kakaotalk-icon} $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
             cp ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
-            
+
             # Process and install wrapper
             cp ${./wrapper.sh} $out/bin/kakaotalk
             chmod +x $out/bin/kakaotalk
-            
+
             # Substitute variables in the wrapper
             substituteInPlace $out/bin/kakaotalk \
               --replace-fail "@bash@" "${bash}" \
@@ -106,7 +123,8 @@
 
           meta = with lib; {
             description = "A messaging and video calling app.";
-            homepage = "https://www.kakaocorp.com/page/service/service/KakaoTalk";
+            homepage =
+              "https://www.kakaocorp.com/page/service/service/KakaoTalk";
             license = licenses.unfree;
             platforms = [ "x86_64-linux" ];
           };

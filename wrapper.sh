@@ -128,11 +128,13 @@ if [ ! -f "$PREFIX/.fonts_configured" ]; then
   # Font linking
   # Critical for fallback. Noto Color Emoji often fails if not explicitly linked.
   # We link both Noto Color Emoji and CJK fonts to Pretendard/system fallback.
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Pretendard" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Noto Sans CJK KR,NotoSansCJKkr-Regular.otf\0Noto Serif CJK KR,NotoSerifCJKkr-Regular.otf" /f
+  # Note: For TTC files, we point to the file. Wine usually auto-detects the face or uses the first one (Sans CJK usually includes KR in the first few/merged).
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Pretendard" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Noto Sans CJK KR,NotoSansCJK-VF.otf.ttc\0Noto Serif CJK KR,NotoSerifCJK-VF.otf.ttc" /f
   "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Tahoma" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f
   "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Segoe UI" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f
   "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Malgun Gothic" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f
   "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Microsoft Sans Serif" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Gulim" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f
   
   # Font smoothing
   "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f
@@ -145,7 +147,7 @@ if [ ! -f "$PREFIX/.fonts_configured" ]; then
   # Link provided fonts
   # Using find with -exec ln is safer but loop is fine here.
   # Ensure we follow symlinks if fontPath is a symlink forest (it is).
-  find -H @fontPath@ -type f \( -name "*.ttf" -o -name "*.otf" \) | while read -r font; do
+  find -H @fontPath@ -type f \( -name "*.ttf" -o -name "*.otf" -o -name "*.ttc" \) | while read -r font; do
     name=$(basename "$font")
     ln -sf "$font" "$PREFIX/drive_c/windows/Fonts/$name" 2>/dev/null || true
   done

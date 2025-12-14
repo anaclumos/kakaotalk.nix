@@ -125,9 +125,27 @@ calculate_dpi() {
 
 apply_dpi_settings() {
   local dpi="$1"
+  local scale="$2"
 
   "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d "$dpi" /f >/dev/null 2>&1 || true
   "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "Win8DpiScaling" /t REG_DWORD /d 1 /f >/dev/null 2>&1 || true
+
+  # Scale shell/tray icon sizes (default: 32 for large, 16 for small)
+  # WindowMetrics uses negative twips: -15 * size (for 96 DPI baseline)
+  # But "Shell Icon Size" is in pixels, not twips
+  local shell_icon_size
+  local small_icon_size
+  if command -v awk >/dev/null 2>&1; then
+    shell_icon_size=$(awk -v s="$scale" 'BEGIN { printf "%d", 32 * s + 0.5 }')
+    small_icon_size=$(awk -v s="$scale" 'BEGIN { printf "%d", 16 * s + 0.5 }')
+  else
+    local int_scale=${scale%.*}
+    [ -z "$int_scale" ] || [ "$int_scale" -lt 1 ] 2>/dev/null && int_scale=1
+    shell_icon_size=$((32 * int_scale))
+    small_icon_size=$((16 * int_scale))
+  fi
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop\\WindowMetrics" /v "Shell Icon Size" /t REG_SZ /d "$shell_icon_size" /f >/dev/null 2>&1 || true
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop\\WindowMetrics" /v "Shell Small Icon Size" /t REG_SZ /d "$small_icon_size" /f >/dev/null 2>&1 || true
 
   if [ "$BACKEND" = x11 ]; then
     "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "$dpi" /f >/dev/null 2>&1 || true
@@ -147,7 +165,7 @@ if [ ! -d "$PREFIX" ]; then
   "$WINEBOOT" -u
   
   # Base settings
-  apply_dpi_settings "$DPI"
+  apply_dpi_settings "$DPI" "$SCALE_FACTOR"
   "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f
   "$WINE" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f
   "$WINE" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "InstallLanguage" /t REG_SZ /d "0412" /f
@@ -164,6 +182,8 @@ if [ ! -d "$PREFIX" ]; then
     "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "GrabClipboard" /t REG_SZ /d "Y" /f
     "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseSystemClipboard" /t REG_SZ /d "Y" /f
   fi
+
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "ForegroundLockTimeout" /t REG_DWORD /d 200000 /f
 
   # Explorer and behaviors
   "$WINE" reg delete "HKEY_CURRENT_USER\\Software\\Wine\\Explorer" /v "Desktop" /f 2>/dev/null || true
@@ -245,7 +265,7 @@ rm -f "$HOME/.local/share/applications/wine/Programs/KakaoTalk.desktop" 2>/dev/n
 set_wine_graphics_driver "$BACKEND"
 
 # Keep DPI in sync with the host scale even on existing prefixes
-apply_dpi_settings "$DPI"
+apply_dpi_settings "$DPI" "$SCALE_FACTOR"
 
 # Launch
 "$WINE" "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "$@"

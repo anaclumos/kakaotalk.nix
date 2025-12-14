@@ -46,17 +46,15 @@ If you're interested in how it actually works in NixOS, see: https://github.com/
 
 ## Uninstalling
 
-- Remove the Flakes Input.
-- Delete `~/.local/share/kakaotalk`
-- Delete
-  - `~/.local/share/applications/wine/Programs/카카오톡.desktop`
-  - `~/.local/share/applications/wine/Programs/KakaoTalk.desktop`
-  - `~/.local/share/applications/wine-protocol-kakaotalk.desktop`
-  - `~/.local/share/applications/wine-protocol-kakaoopen.desktop`
+1. Remove the flake input from your configuration and rebuild.
+2. Delete the Wine prefix and leftover desktop files:
 
-
-```
-rm -rf ~/.local/share/kakaotalk ~/.local/share/applications/wine/Programs/카카오톡.desktop ~/.local/share/applications/wine/Programs/KakaoTalk.desktop ~/.local/share/applications/wine-protocol-kakaotalk.desktop ~/.local/share/applications/wine-protocol-kakaoopen.desktop
+```bash
+rm -rf "${XDG_DATA_HOME:-$HOME/.local/share}/kakaotalk"
+rm -f ~/.local/share/applications/wine/Programs/카카오톡.desktop
+rm -f ~/.local/share/applications/wine/Programs/KakaoTalk.desktop
+rm -f ~/.local/share/applications/wine-protocol-kakaotalk.desktop
+rm -f ~/.local/share/applications/wine-protocol-kakaoopen.desktop
 ```
 
 ## License

@@ -37,6 +37,13 @@ This repository packages the Windows version of **KakaoTalk** for NixOS.
 
 If you're interested in how it actually works in NixOS, see: https://github.com/anaclumos/nix
 
+## Wayland users
+
+- Default backend is Xwayland for tray stability (Wine's Wayland driver still has tray issues). To try native Wayland, launch with `KAKAOTALK_FORCE_BACKEND=wayland kakaotalk`.
+- If the app gets stuck in the tray, you can do a clean start:  
+  `KAKAOTALK_CLEAN_START=1 kakaotalk`  
+  (equivalent to `WINEPREFIX=${XDG_DATA_HOME:-$HOME/.local/share}/kakaotalk wineserver -k` before launch)
+
 ## Uninstalling
 
 - Remove the Flakes Input.

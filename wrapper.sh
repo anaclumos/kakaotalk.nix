@@ -19,6 +19,7 @@ export GTK_USE_PORTAL=
 export PATH="@wineBin@:@winetricks@/bin:$PATH"
 WINE="@wineBin@/wine"
 WINEBOOT="@wineBin@/wineboot"
+WINESERVER="@wineBin@/wineserver"
 WINETRICKS="@winetricks@/bin/winetricks"
 INSTALLER="@out@/share/kakaotalk/KakaoTalk_Setup.exe"
 
@@ -31,13 +32,20 @@ PREFIX="$PREFIX/kakaotalk"
 export WINEPREFIX="$PREFIX"
 
 # Backend detection
-BACKEND="$KAKAOTALK_FORCE_BACKEND"
-if [ -z "$BACKEND" ]; then
+# Default to X11 (Xwayland) for stable tray behavior; allow override to try
+# Wine's Wayland driver.
+if [ -n "$KAKAOTALK_FORCE_BACKEND" ]; then
+  BACKEND="$KAKAOTALK_FORCE_BACKEND"
+else
+  BACKEND=x11
   if [ -n "$WAYLAND_DISPLAY" ]; then
-    BACKEND=wayland
-  else
-    BACKEND=x11
+    echo "Wayland session detected; defaulting to X11 for tray stability. Set KAKAOTALK_FORCE_BACKEND=wayland to try the Wayland driver." >&2
   fi
+fi
+
+# Optional clean start to recover from a stuck tray/session
+if [ "$KAKAOTALK_CLEAN_START" = "1" ]; then
+  "$WINESERVER" -k 2>/dev/null || true
 fi
 
 # Helper function to set Wine graphics driver

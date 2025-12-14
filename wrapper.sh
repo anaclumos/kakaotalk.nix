@@ -72,20 +72,88 @@ set_wine_graphics_driver() {
   esac
 }
 
+# Detect host scale factor (default 1) to keep Wine UI/tray sizes aligned
+detect_scale_factor() {
+  local number_re='^[0-9]+([.][0-9]+)?$'
+
+  if [ -n "$KAKAOTALK_SCALE" ] && printf '%s' "$KAKAOTALK_SCALE" | grep -Eq "$number_re"; then
+    echo "$KAKAOTALK_SCALE"
+    return
+  fi
+
+  if [ -n "$GDK_SCALE" ] && printf '%s' "$GDK_SCALE" | grep -Eq "$number_re"; then
+    echo "$GDK_SCALE"
+    return
+  fi
+
+  if [ -n "$QT_SCALE_FACTOR" ] && printf '%s' "$QT_SCALE_FACTOR" | grep -Eq "$number_re"; then
+    echo "$QT_SCALE_FACTOR"
+    return
+  fi
+
+  if [ -n "$XCURSOR_SIZE" ] && command -v awk >/dev/null 2>&1; then
+    local approx
+    approx=$(awk -v size="$XCURSOR_SIZE" 'BEGIN { if (size > 0) printf "%.2f", size/24; }')
+    if [ -n "$approx" ]; then
+      echo "$approx"
+      return
+    fi
+  fi
+
+  echo "1"
+}
+
+calculate_dpi() {
+  if command -v awk >/dev/null 2>&1; then
+    awk -v s="$1" 'BEGIN {
+      if (s !~ /^[0-9]+(\.[0-9]+)?$/ || s <= 0) s = 1;
+      dpi = 96 * s;
+      if (dpi < 96) dpi = 96;
+      printf "%d", (dpi + 0.5);
+    }'
+  else
+    local int_scale=${1%.*}
+    case "$int_scale" in
+      ''|0) int_scale=1 ;;
+    esac
+    if [ "$int_scale" -lt 1 ] 2>/dev/null; then
+      int_scale=1
+    fi
+    echo $((96 * int_scale))
+  fi
+}
+
+apply_dpi_settings() {
+  local dpi="$1"
+
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d "$dpi" /f >/dev/null 2>&1 || true
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "Win8DpiScaling" /t REG_DWORD /d 1 /f >/dev/null 2>&1 || true
+
+  if [ "$BACKEND" = x11 ]; then
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "$dpi" /f >/dev/null 2>&1 || true
+  fi
+}
+
+SCALE_FACTOR=$(detect_scale_factor)
+DPI=$(calculate_dpi "$SCALE_FACTOR")
+
+if [ "$SCALE_FACTOR" != "1" ]; then
+  echo "Applying scale factor $SCALE_FACTOR (~${DPI} DPI) for Wine." >&2
+fi
+
 # Initial setup
 if [ ! -d "$PREFIX" ]; then
   mkdir -p "$PREFIX"
   "$WINEBOOT" -u
   
   # Base settings
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d 96 /f
+  apply_dpi_settings "$DPI"
   "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f
   "$WINE" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f
   "$WINE" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "InstallLanguage" /t REG_SZ /d "0412" /f
   
   # X11 specific settings
   if [ "$BACKEND" = x11 ]; then
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "96" /f
     "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Decorated" /t REG_SZ /d "Y" /f
     "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed" /t REG_SZ /d "Y" /f
     "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseTakeFocus" /t REG_SZ /d "N" /f
@@ -175,6 +243,9 @@ rm -f "$HOME/.local/share/applications/wine/Programs/KakaoTalk.desktop" 2>/dev/n
 
 # Ensure driver preference
 set_wine_graphics_driver "$BACKEND"
+
+# Keep DPI in sync with the host scale even on existing prefixes
+apply_dpi_settings "$DPI"
 
 # Launch
 "$WINE" "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "$@"

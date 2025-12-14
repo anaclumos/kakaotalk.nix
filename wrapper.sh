@@ -22,6 +22,7 @@ if [ -z "$PREFIX" ]; then
 fi
 PREFIX="$PREFIX/kakaotalk"
 export WINEPREFIX="$PREFIX"
+export WINEARCH=win32
 
 if [ -n "$KAKAOTALK_FORCE_BACKEND" ]; then
   BACKEND="$KAKAOTALK_FORCE_BACKEND"

@@ -69,7 +69,7 @@
             noto-fonts
             noto-fonts-cjk-sans
             noto-fonts-cjk-serif
-            noto-fonts-color-emoji
+            twemoji-color-font
           ];
 
           # Create a symlink join of all fonts to make them easily accessible in one path

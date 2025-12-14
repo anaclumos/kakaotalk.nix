@@ -147,61 +147,61 @@ if [ ! -d "$PREFIX" ]; then
   "$WINEBOOT" -u
 
   apply_dpi_settings "$DPI" "$SCALE_FACTOR"
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "InstallLanguage" /t REG_SZ /d "0412" /f
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "InstallLanguage" /t REG_SZ /d "0412" /f >/dev/null 2>&1
 
   if [ "$BACKEND" = x11 ]; then
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Decorated" /t REG_SZ /d "Y" /f
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed" /t REG_SZ /d "Y" /f
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseTakeFocus" /t REG_SZ /d "N" /f
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseXIM" /t REG_SZ /d "Y" /f
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UsePrimarySelection" /t REG_SZ /d "N" /f
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "GrabClipboard" /t REG_SZ /d "Y" /f
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseSystemClipboard" /t REG_SZ /d "Y" /f
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Decorated" /t REG_SZ /d "Y" /f >/dev/null 2>&1
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed" /t REG_SZ /d "Y" /f >/dev/null 2>&1
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseTakeFocus" /t REG_SZ /d "N" /f >/dev/null 2>&1
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseXIM" /t REG_SZ /d "Y" /f >/dev/null 2>&1
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UsePrimarySelection" /t REG_SZ /d "N" /f >/dev/null 2>&1
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "GrabClipboard" /t REG_SZ /d "Y" /f >/dev/null 2>&1
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseSystemClipboard" /t REG_SZ /d "Y" /f >/dev/null 2>&1
   fi
 
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "ForegroundLockTimeout" /t REG_DWORD /d 200000 /f
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "ForegroundLockTimeout" /t REG_DWORD /d 200000 /f >/dev/null 2>&1
 
   "$WINE" reg delete "HKEY_CURRENT_USER\\Software\\Wine\\Explorer" /v "Desktop" /f >/dev/null 2>&1 || true
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Audio" /t REG_SZ /d "" /f
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\DragAcceptFiles" /v "Accept" /t REG_DWORD /d 1 /f
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\OleDropTarget" /v "Enable" /t REG_DWORD /d 1 /f
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Audio" /t REG_SZ /d "" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\DragAcceptFiles" /v "Accept" /t REG_DWORD /d 1 /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\OleDropTarget" /v "Enable" /t REG_DWORD /d 1 /f >/dev/null 2>&1
 
   set_wine_graphics_driver "$BACKEND"
 fi
 
 if [ ! -f "$PREFIX/.winetricks_done" ]; then
-  "$WINETRICKS" corefonts -q
+  "$WINETRICKS" -q corefonts >/dev/null 2>&1
   touch "$PREFIX/.winetricks_done"
 fi
 
 if [ ! -f "$PREFIX/.fonts_configured" ]; then
-  echo "Configuring font replacements..."
+  echo "Configuring font replacements..." >&2
 
   for font in @westernFonts@; do
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "Pretendard" /f
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "Pretendard" /f >/dev/null 2>&1
   done
 
   for font in @koreanFonts@; do
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "Pretendard" /f
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "Pretendard" /f >/dev/null 2>&1
   done
 
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Emoji" /t REG_SZ /d "Noto Color Emoji" /f
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Symbol" /t REG_SZ /d "Noto Color Emoji" /f
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Apple Color Emoji" /t REG_SZ /d "Noto Color Emoji" /f
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Color Emoji" /t REG_SZ /d "Noto Color Emoji" /f
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Emoji" /t REG_SZ /d "Noto Color Emoji" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Symbol" /t REG_SZ /d "Noto Color Emoji" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Apple Color Emoji" /t REG_SZ /d "Noto Color Emoji" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Color Emoji" /t REG_SZ /d "Noto Color Emoji" /f >/dev/null 2>&1
 
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Pretendard" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Noto Sans CJK KR,NotoSansCJK-VF.otf.ttc\0Noto Serif CJK KR,NotoSerifCJK-VF.otf.ttc" /f
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Tahoma" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Segoe UI" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Malgun Gothic" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Microsoft Sans Serif" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Gulim" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Pretendard" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Noto Sans CJK KR,NotoSansCJK-VF.otf.ttc\0Noto Serif CJK KR,NotoSerifCJK-VF.otf.ttc" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Tahoma" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Segoe UI" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Malgun Gothic" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Microsoft Sans Serif" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Gulim" /t REG_MULTI_SZ /d "Noto Color Emoji,NotoColorEmoji.ttf\0Pretendard,Pretendard-Regular.otf" /f >/dev/null 2>&1
 
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingType" /t REG_DWORD /d 2 /f
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingGamma" /t REG_DWORD /d 1400 /f
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingType" /t REG_DWORD /d 2 /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingGamma" /t REG_DWORD /d 1400 /f >/dev/null 2>&1
 
   mkdir -p "$PREFIX/drive_c/windows/Fonts"
 

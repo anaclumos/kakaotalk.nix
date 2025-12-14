@@ -67,9 +67,8 @@
           fontPackages = [
             pretendard
             noto-fonts
-            noto-fonts-cjk-sans
-            noto-fonts-cjk-serif
-            twemoji-color-font
+            symbola
+            baekmuk-ttf
           ];
 
           # Create a symlink join of all fonts to make them easily accessible in one path

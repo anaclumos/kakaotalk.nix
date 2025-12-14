@@ -48,13 +48,13 @@ set_wine_graphics_driver() {
   case "$driver" in
     wayland)
       if [ "$have_wayland" -eq 1 ]; then
-        "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Graphics" /t REG_SZ /d "wayland" /f >/dev/null 2>&1 || true
+        "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Graphics" /t REG_SZ /d "wayland" /f || true
       else
-        "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Graphics" /t REG_SZ /d "x11" /f >/dev/null 2>&1 || true
+        "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Graphics" /t REG_SZ /d "x11" /f || true
       fi
       ;;
     x11|*)
-      "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Graphics" /t REG_SZ /d "x11" /f >/dev/null 2>&1 || true
+      "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Graphics" /t REG_SZ /d "x11" /f || true
       ;;
   esac
 }
@@ -113,8 +113,8 @@ apply_dpi_settings() {
   local dpi="$1"
   local scale="$2"
 
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d "$dpi" /f >/dev/null 2>&1 || true
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "Win8DpiScaling" /t REG_DWORD /d 1 /f >/dev/null 2>&1 || true
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d "$dpi" /f || true
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "Win8DpiScaling" /t REG_DWORD /d 1 /f || true
 
   local shell_icon_size
   local small_icon_size
@@ -127,11 +127,11 @@ apply_dpi_settings() {
     shell_icon_size=$((32 * int_scale))
     small_icon_size=$((16 * int_scale))
   fi
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop\\WindowMetrics" /v "Shell Icon Size" /t REG_SZ /d "$shell_icon_size" /f >/dev/null 2>&1 || true
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop\\WindowMetrics" /v "Shell Small Icon Size" /t REG_SZ /d "$small_icon_size" /f >/dev/null 2>&1 || true
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop\\WindowMetrics" /v "Shell Icon Size" /t REG_SZ /d "$shell_icon_size" /f || true
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop\\WindowMetrics" /v "Shell Small Icon Size" /t REG_SZ /d "$small_icon_size" /f || true
 
   if [ "$BACKEND" = x11 ]; then
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "$dpi" /f >/dev/null 2>&1 || true
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "$dpi" /f || true
   fi
 }
 
@@ -147,32 +147,32 @@ if [ ! -d "$PREFIX" ]; then
   "$WINEBOOT" -u
 
   apply_dpi_settings "$DPI" "$SCALE_FACTOR"
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f >/dev/null 2>&1
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f >/dev/null 2>&1
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "InstallLanguage" /t REG_SZ /d "0412" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "InstallLanguage" /t REG_SZ /d "0412" /f
 
   if [ "$BACKEND" = x11 ]; then
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Decorated" /t REG_SZ /d "Y" /f >/dev/null 2>&1
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed" /t REG_SZ /d "Y" /f >/dev/null 2>&1
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseTakeFocus" /t REG_SZ /d "N" /f >/dev/null 2>&1
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseXIM" /t REG_SZ /d "Y" /f >/dev/null 2>&1
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UsePrimarySelection" /t REG_SZ /d "N" /f >/dev/null 2>&1
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "GrabClipboard" /t REG_SZ /d "Y" /f >/dev/null 2>&1
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseSystemClipboard" /t REG_SZ /d "Y" /f >/dev/null 2>&1
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Decorated" /t REG_SZ /d "Y" /f
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed" /t REG_SZ /d "Y" /f
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseTakeFocus" /t REG_SZ /d "N" /f
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseXIM" /t REG_SZ /d "Y" /f
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UsePrimarySelection" /t REG_SZ /d "N" /f
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "GrabClipboard" /t REG_SZ /d "Y" /f
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseSystemClipboard" /t REG_SZ /d "Y" /f
   fi
 
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "ForegroundLockTimeout" /t REG_DWORD /d 200000 /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "ForegroundLockTimeout" /t REG_DWORD /d 200000 /f
 
-  "$WINE" reg delete "HKEY_CURRENT_USER\\Software\\Wine\\Explorer" /v "Desktop" /f >/dev/null 2>&1 || true
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Audio" /t REG_SZ /d "" /f >/dev/null 2>&1
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\DragAcceptFiles" /v "Accept" /t REG_DWORD /d 1 /f >/dev/null 2>&1
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\OleDropTarget" /v "Enable" /t REG_DWORD /d 1 /f >/dev/null 2>&1
+  "$WINE" reg delete "HKEY_CURRENT_USER\\Software\\Wine\\Explorer" /v "Desktop" /f 2>/dev/null || true
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Audio" /t REG_SZ /d "" /f
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\DragAcceptFiles" /v "Accept" /t REG_DWORD /d 1 /f
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\OleDropTarget" /v "Enable" /t REG_DWORD /d 1 /f
 
   set_wine_graphics_driver "$BACKEND"
 fi
 
 if [ ! -f "$PREFIX/.winetricks_done" ]; then
-  "$WINETRICKS" -q corefonts >/dev/null 2>&1
+  "$WINETRICKS" -q corefonts
   touch "$PREFIX/.winetricks_done"
 fi
 
@@ -180,28 +180,28 @@ if [ ! -f "$PREFIX/.fonts_configured" ]; then
   echo "Configuring font replacements..." >&2
 
   for font in @westernFonts@; do
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "Pretendard" /f >/dev/null 2>&1
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "Pretendard" /f
   done
 
   for font in @koreanFonts@; do
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "Pretendard" /f >/dev/null 2>&1
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "Pretendard" /f
   done
 
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Emoji" /t REG_SZ /d "Twitter Color Emoji" /f >/dev/null 2>&1
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Symbol" /t REG_SZ /d "Twitter Color Emoji" /f >/dev/null 2>&1
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Apple Color Emoji" /t REG_SZ /d "Twitter Color Emoji" /f >/dev/null 2>&1
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Noto Color Emoji" /t REG_SZ /d "Twitter Color Emoji" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Emoji" /t REG_SZ /d "Symbola" /f
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Symbol" /t REG_SZ /d "Symbola" /f
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Apple Color Emoji" /t REG_SZ /d "Symbola" /f
+  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Noto Color Emoji" /t REG_SZ /d "Symbola" /f
 
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Pretendard" /t REG_MULTI_SZ /d "Twitter Color Emoji,TwitterColorEmoji-SVGinOT.ttf\0Noto Sans CJK KR,NotoSansCJK-VF.otf.ttc\0Noto Serif CJK KR,NotoSerifCJK-VF.otf.ttc" /f >/dev/null 2>&1
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Tahoma" /t REG_MULTI_SZ /d "Twitter Color Emoji,TwitterColorEmoji-SVGinOT.ttf\0Pretendard,Pretendard-Regular.otf" /f >/dev/null 2>&1
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Segoe UI" /t REG_MULTI_SZ /d "Twitter Color Emoji,TwitterColorEmoji-SVGinOT.ttf\0Pretendard,Pretendard-Regular.otf" /f >/dev/null 2>&1
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Malgun Gothic" /t REG_MULTI_SZ /d "Twitter Color Emoji,TwitterColorEmoji-SVGinOT.ttf\0Pretendard,Pretendard-Regular.otf" /f >/dev/null 2>&1
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Microsoft Sans Serif" /t REG_MULTI_SZ /d "Twitter Color Emoji,TwitterColorEmoji-SVGinOT.ttf\0Pretendard,Pretendard-Regular.otf" /f >/dev/null 2>&1
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Gulim" /t REG_MULTI_SZ /d "Twitter Color Emoji,TwitterColorEmoji-SVGinOT.ttf\0Pretendard,Pretendard-Regular.otf" /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Pretendard" /t REG_MULTI_SZ /d "Symbola,Symbola.otf\0Baekmuk Gulim,gulim.ttf\0Baekmuk Batang,batang.ttf" /f
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Tahoma" /t REG_MULTI_SZ /d "Symbola,Symbola.otf\0Pretendard,Pretendard-Regular.otf" /f
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Segoe UI" /t REG_MULTI_SZ /d "Symbola,Symbola.otf\0Pretendard,Pretendard-Regular.otf" /f
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Malgun Gothic" /t REG_MULTI_SZ /d "Symbola,Symbola.otf\0Pretendard,Pretendard-Regular.otf" /f
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Microsoft Sans Serif" /t REG_MULTI_SZ /d "Symbola,Symbola.otf\0Pretendard,Pretendard-Regular.otf" /f
+  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Gulim" /t REG_MULTI_SZ /d "Symbola,Symbola.otf\0Pretendard,Pretendard-Regular.otf" /f
 
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f >/dev/null 2>&1
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingType" /t REG_DWORD /d 2 /f >/dev/null 2>&1
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingGamma" /t REG_DWORD /d 1400 /f >/dev/null 2>&1
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingType" /t REG_DWORD /d 2 /f
+  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingGamma" /t REG_DWORD /d 1400 /f
 
   mkdir -p "$PREFIX/drive_c/windows/Fonts"
 

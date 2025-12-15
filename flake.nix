@@ -63,13 +63,7 @@
             startupWMClass = "kakaotalk.exe";
           };
 
-          # Combine all fonts we want to link
-          fontPackages = [
-            pretendard
-            noto-fonts
-            symbola
-            baekmuk-ttf
-          ];
+          fontPackages = [ symbola baekmuk-ttf ];
 
           # Create a symlink join of all fonts to make them easily accessible in one path
           fontPath = symlinkJoin {

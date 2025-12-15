@@ -179,25 +179,28 @@ fi
 if [ ! -f "$PREFIX/.fonts_configured" ]; then
   echo "Configuring font replacements..." >&2
 
-  for font in @westernFonts@; do
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "Pretendard" /f
+  PRIMARY_FONT="Baekmuk Gulim"
+  SERIF_FONT="Baekmuk Batang"
+  EMOJI_FONT="Symbola"
+  FONT_LINK_VALUE="$EMOJI_FONT,Symbola.otf\0$PRIMARY_FONT,gulim.ttf\0$SERIF_FONT,batang.ttf"
+
+  for font in @westernFonts@ @koreanFonts@; do
+    replacement="$PRIMARY_FONT"
+    case "$font" in
+      "Batang"|"Gungsuh")
+        replacement="$SERIF_FONT"
+        ;;
+    esac
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "$replacement" /f
   done
 
-  for font in @koreanFonts@; do
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "Pretendard" /f
+  for font in "Segoe UI Emoji" "Segoe UI Symbol" "Apple Color Emoji" "Noto Color Emoji"; do
+    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "$EMOJI_FONT" /f
   done
 
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Emoji" /t REG_SZ /d "Symbola" /f
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Segoe UI Symbol" /t REG_SZ /d "Symbola" /f
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Apple Color Emoji" /t REG_SZ /d "Symbola" /f
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "Noto Color Emoji" /t REG_SZ /d "Symbola" /f
-
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Pretendard" /t REG_MULTI_SZ /d "Symbola,Symbola.otf\0Baekmuk Gulim,gulim.ttf\0Baekmuk Batang,batang.ttf" /f
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Tahoma" /t REG_MULTI_SZ /d "Symbola,Symbola.otf\0Pretendard,Pretendard-Regular.otf" /f
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Segoe UI" /t REG_MULTI_SZ /d "Symbola,Symbola.otf\0Pretendard,Pretendard-Regular.otf" /f
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Malgun Gothic" /t REG_MULTI_SZ /d "Symbola,Symbola.otf\0Pretendard,Pretendard-Regular.otf" /f
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Microsoft Sans Serif" /t REG_MULTI_SZ /d "Symbola,Symbola.otf\0Pretendard,Pretendard-Regular.otf" /f
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "Gulim" /t REG_MULTI_SZ /d "Symbola,Symbola.otf\0Pretendard,Pretendard-Regular.otf" /f
+  for font in "Tahoma" "Segoe UI" "Malgun Gothic" "Microsoft Sans Serif" "Gulim" "$PRIMARY_FONT" "$SERIF_FONT"; do
+    "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "$font" /t REG_MULTI_SZ /d "$FONT_LINK_VALUE" /f
+  done
 
   "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f
   "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingType" /t REG_DWORD /d 2 /f

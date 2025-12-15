@@ -208,7 +208,7 @@ if [ ! -f "$PREFIX/.fonts_configured" ]; then
 
   mkdir -p "$PREFIX/drive_c/windows/Fonts"
 
-  find -H @fontPath@ -type f \( -name "*.ttf" -o -name "*.otf" -o -name "*.ttc" \) | while read -r font; do
+  find -L @fontPath@ -type f \( -name "*.ttf" -o -name "*.otf" -o -name "*.ttc" \) | while read -r font; do
     name=$(basename "$font")
     ln -sf "$font" "$PREFIX/drive_c/windows/Fonts/$name" 2>/dev/null || true
   done

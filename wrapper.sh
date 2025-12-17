@@ -179,10 +179,24 @@ fi
 if [ ! -f "$PREFIX/.fonts_configured" ]; then
   echo "Configuring font replacements..." >&2
 
+  mkdir -p "$PREFIX/drive_c/windows/Fonts"
+
+  find -L @fontPath@ -type f \( -name "*.ttf" -o -name "*.otf" -o -name "*.ttc" \) | while read -r font; do
+    name=$(basename "$font")
+    ln -sf "$font" "$PREFIX/drive_c/windows/Fonts/$name" 2>/dev/null || true
+  done
+
+  # Detect Symbola filename
+  SYMBOLA_FILE="Symbola.ttf"
+  DETECTED_SYMBOLA=$(find "$PREFIX/drive_c/windows/Fonts" -maxdepth 1 -iname "symbola.*" -print -quit)
+  if [ -n "$DETECTED_SYMBOLA" ]; then
+    SYMBOLA_FILE=$(basename "$DETECTED_SYMBOLA")
+  fi
+
   PRIMARY_FONT="Baekmuk Gulim"
   SERIF_FONT="Baekmuk Batang"
   EMOJI_FONT="Symbola"
-  FONT_LINK_VALUE="$EMOJI_FONT,Symbola.otf\0$PRIMARY_FONT,gulim.ttf\0$SERIF_FONT,batang.ttf"
+  FONT_LINK_VALUE="$EMOJI_FONT,$SYMBOLA_FILE\0$PRIMARY_FONT,gulim.ttf\0$SERIF_FONT,batang.ttf"
 
   for font in @westernFonts@ @koreanFonts@; do
     replacement="$PRIMARY_FONT"
@@ -205,13 +219,6 @@ if [ ! -f "$PREFIX/.fonts_configured" ]; then
   "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f
   "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingType" /t REG_DWORD /d 2 /f
   "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingGamma" /t REG_DWORD /d 1400 /f
-
-  mkdir -p "$PREFIX/drive_c/windows/Fonts"
-
-  find -L @fontPath@ -type f \( -name "*.ttf" -o -name "*.otf" -o -name "*.ttc" \) | while read -r font; do
-    name=$(basename "$font")
-    ln -sf "$font" "$PREFIX/drive_c/windows/Fonts/$name" 2>/dev/null || true
-  done
 
   touch "$PREFIX/.fonts_configured"
 fi

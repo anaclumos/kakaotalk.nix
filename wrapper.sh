@@ -196,8 +196,12 @@ if [ ! -f "$PREFIX/.fonts_configured" ]; then
   PRIMARY_FONT="Baekmuk Gulim"
   SERIF_FONT="Baekmuk Batang"
   EMOJI_FONT="Symbola"
-  FONT_LINK_VALUE="$SYMBOLA_FILE,$EMOJI_FONT\0gulim.ttf,$PRIMARY_FONT\0batang.ttf,$SERIF_FONT"
+  
+  # Simplify FontLink to just the Emoji font. 
+  # Self-referencing links (Gulim -> Gulim) are unnecessary and potentially problematic.
+  FONT_LINK_VALUE="$SYMBOLA_FILE,$EMOJI_FONT"
 
+  # Register Replacements
   for font in @westernFonts@ @koreanFonts@; do
     replacement="$PRIMARY_FONT"
     case "$font" in
@@ -208,11 +212,17 @@ if [ ! -f "$PREFIX/.fonts_configured" ]; then
     "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "$replacement" /f
   done
 
+  # Add Symbola replacement for emoji fonts
   for font in "Segoe UI Emoji" "Segoe UI Symbol" "Apple Color Emoji" "Noto Color Emoji"; do
     "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "$EMOJI_FONT" /f
   done
 
-  for font in "Tahoma" "Segoe UI" "Malgun Gothic" "Microsoft Sans Serif" "Gulim" "$PRIMARY_FONT" "$SERIF_FONT"; do
+  # Apply SystemLink (Fallback) to standard Windows fonts AND the replacement Korean fonts
+  # This ensures that if an app asks for "Tahoma" (mapped to Baekmuk), it links to Symbola.
+  # And if it asks for "Baekmuk Gulim" directly, it also links to Symbola.
+  LINK_TARGETS=("Tahoma" "Segoe UI" "Malgun Gothic" "Microsoft Sans Serif" "Gulim" "Batang" "$PRIMARY_FONT" "$SERIF_FONT")
+  
+  for font in "${LINK_TARGETS[@]}"; do
     "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "$font" /t REG_MULTI_SZ /d "$FONT_LINK_VALUE" /f
   done
 

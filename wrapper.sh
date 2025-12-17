@@ -220,6 +220,9 @@ if [ ! -f "$PREFIX/.fonts_configured" ]; then
   "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingType" /t REG_DWORD /d 2 /f
   "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingGamma" /t REG_DWORD /d 1400 /f
 
+  # Force Wine to refresh font cache and registry
+  "$WINEBOOT"
+
   touch "$PREFIX/.fonts_configured"
 fi
 

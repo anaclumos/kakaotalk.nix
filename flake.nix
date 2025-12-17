@@ -51,7 +51,7 @@
         let
           pkgs = nixpkgs.legacyPackages.${system};
 
-          fontPackages = with pkgs; [ noto-fonts-emoji baekmuk-ttf ];
+          fontPackages = with pkgs; [ noto-fonts-emoji pretendard ];
           fontPath = pkgs.symlinkJoin {
             name = "kakaotalk-fonts";
             paths = fontPackages;

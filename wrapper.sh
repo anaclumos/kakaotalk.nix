@@ -195,8 +195,8 @@ configure_fonts() {
     emoji_file=$(basename "$detected")
   fi
 
-  local primary_font="Baekmuk Gulim"
-  local serif_font="Baekmuk Batang"
+  local primary_font="Pretendard"
+  local serif_font="Pretendard"
   local emoji_font="Noto Color Emoji"
   local font_link_value="$emoji_file,$emoji_font"
 

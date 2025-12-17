@@ -196,7 +196,7 @@ if [ ! -f "$PREFIX/.fonts_configured" ]; then
   PRIMARY_FONT="Baekmuk Gulim"
   SERIF_FONT="Baekmuk Batang"
   EMOJI_FONT="Symbola"
-  FONT_LINK_VALUE="$EMOJI_FONT,$SYMBOLA_FILE\0$PRIMARY_FONT,gulim.ttf\0$SERIF_FONT,batang.ttf"
+  FONT_LINK_VALUE="$SYMBOLA_FILE,$EMOJI_FONT\0gulim.ttf,$PRIMARY_FONT\0batang.ttf,$SERIF_FONT"
 
   for font in @westernFonts@ @koreanFonts@; do
     replacement="$PRIMARY_FONT"

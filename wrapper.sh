@@ -216,7 +216,7 @@ if [ ! -f "$PREFIX/.fonts_configured" ]; then
   touch "$PREFIX/.fonts_configured"
 fi
 
-if [ ! -f "$PREFIX/drive_c/Program Files (x86)/Kakao/KakaoTalk/KakaoTalk.exe" ]; then
+if [ ! -f "$PREFIX/drive_c/Program Files/Kakao/KakaoTalk/KakaoTalk.exe" ]; then
   echo "Installing KakaoTalk..."
   "$WINE" "$INSTALLER"
 fi
@@ -228,4 +228,4 @@ set_wine_graphics_driver "$BACKEND"
 
 apply_dpi_settings "$DPI" "$SCALE_FACTOR"
 
-"$WINE" "C:\\Program Files (x86)\\Kakao\\KakaoTalk\\KakaoTalk.exe" "$@"
+"$WINE" "C:\\Program Files\\Kakao\\KakaoTalk\\KakaoTalk.exe" "$@"

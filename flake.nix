@@ -14,8 +14,9 @@
 
   outputs = { self, nixpkgs, kakaotalk-exe, kakaotalk-icon }:
     let
-      system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+      inherit (nixpkgs.lib) concatMapStringsSep genAttrs;
+
+      systems = [ "x86_64-linux" ];
 
       westernFonts = [
         "Arial"
@@ -43,15 +44,20 @@
 
       koreanFonts = [ "Gulim" "Dotum" "Batang" "Gungsuh" "Malgun Gothic" ];
 
-      # Helper to quote list elements for shell usage
       quoteList = list:
-        pkgs.lib.concatMapStringsSep " " (x: ''"'' + x + ''"'') list;
+        concatMapStringsSep " " (font: ''"'' + font + ''"'') list;
 
-    in {
-      packages.${system} = with pkgs; {
-        default = self.packages.${system}.kakaotalk;
-        kakaotalk = let
-          desktopItem = makeDesktopItem {
+      mkPackage = system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+
+          fontPackages = with pkgs; [ noto-fonts-emoji baekmuk-ttf ];
+          fontPath = pkgs.symlinkJoin {
+            name = "kakaotalk-fonts";
+            paths = fontPackages;
+          };
+
+          desktopItem = pkgs.makeDesktopItem {
             name = "kakaotalk";
             exec = "kakaotalk %U";
             icon = "kakaotalk";
@@ -62,59 +68,39 @@
             mimeTypes = [ "x-scheme-handler/kakaotalk" ];
             startupWMClass = "kakaotalk.exe";
           };
-
-          fontPackages = [ noto-fonts-emoji baekmuk-ttf ];
-
-          # Create a symlink join of all fonts to make them easily accessible in one path
-          fontPath = symlinkJoin {
-            name = "kakaotalk-fonts";
-            paths = fontPackages;
-          };
-
-        in stdenv.mkDerivation rec {
+        in pkgs.stdenv.mkDerivation rec {
           pname = "kakaotalk";
           version = "0.1.0";
           src = kakaotalk-exe;
           dontUnpack = true;
 
-          nativeBuildInputs =
-            [ makeWrapper wineWowPackages.stable winetricks copyDesktopItems ];
-
-          # Pass variables to substituteAll
-          # We manually invoke substituteAll in installPhase for flexibility or use stdenv's hook if we made it a separate derivation, 
-          # but here we can just substitute the script directly.
+          nativeBuildInputs = [ pkgs.wineWowPackages.stable pkgs.winetricks ];
 
           installPhase = ''
             runHook preInstall
 
-            mkdir -p $out/bin $out/share/icons/hicolor/scalable/apps $out/share/kakaotalk
+            install -Dm644 ${kakaotalk-icon} \
+              $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
+            install -Dm644 ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
+            install -Dm755 ${./wrapper.sh} $out/bin/kakaotalk
 
-            # Install resources
-            cp ${kakaotalk-icon} $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
-            cp ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
-
-            # Process and install wrapper
-            cp ${./wrapper.sh} $out/bin/kakaotalk
-            chmod +x $out/bin/kakaotalk
-
-            # Substitute variables in the wrapper
             substituteInPlace $out/bin/kakaotalk \
-              --replace-fail "@bash@" "${bash}" \
-              --replace-fail "@wineBin@" "${wineWowPackages.stable}/bin" \
-              --replace-fail "@wineLib@" "${wineWowPackages.stable}/lib" \
-              --replace-fail "@winetricks@" "${winetricks}" \
+              --replace-fail "@bash@" "${pkgs.bash}" \
+              --replace-fail "@wineBin@" "${pkgs.wineWowPackages.stable}/bin" \
+              --replace-fail "@wineLib@" "${pkgs.wineWowPackages.stable}/lib" \
+              --replace-fail "@winetricks@" "${pkgs.winetricks}" \
               --replace-fail "@out@" "$out" \
               --replace-fail "@westernFonts@" '${quoteList westernFonts}' \
               --replace-fail "@koreanFonts@" '${quoteList koreanFonts}' \
               --replace-fail "@fontPath@" "${fontPath}/share/fonts"
 
-            # Install desktop item
-            cp -r ${desktopItem}/share/applications $out/share/
+            install -Dm644 ${desktopItem}/share/applications/kakaotalk.desktop \
+              $out/share/applications/kakaotalk.desktop
 
             runHook postInstall
           '';
 
-          meta = with lib; {
+          meta = with pkgs.lib; {
             description = "A messaging and video calling app.";
             homepage =
               "https://www.kakaocorp.com/page/service/service/KakaoTalk";
@@ -122,11 +108,19 @@
             platforms = [ "x86_64-linux" ];
           };
         };
-      };
-      apps.${system}.kakaotalk = {
-        type = "app";
-        program = "${self.packages.${system}.kakaotalk}/bin/kakaotalk";
-      };
-      apps.${system}.default = self.apps.${system}.kakaotalk;
+    in {
+      packages = genAttrs systems (system: rec {
+        kakaotalk = mkPackage system;
+        default = kakaotalk;
+      });
+
+      apps = genAttrs systems (system:
+        let pkg = self.packages.${system}.kakaotalk; in rec {
+          kakaotalk = {
+            type = "app";
+            program = "${pkg}/bin/kakaotalk";
+          };
+          default = kakaotalk;
+        });
     };
 }

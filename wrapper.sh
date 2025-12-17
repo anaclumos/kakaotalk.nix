@@ -1,13 +1,17 @@
 #!@bash@/bin/bash
 
-export GTK_IM_MODULE=fcitx
-export QT_IM_MODULE=fcitx
-export XMODIFIERS=@im=fcitx
-export GTK_USE_PORTAL=
+set -euo pipefail
 
-[ -z "$WINEESYNC" ] && export WINEESYNC=1
-[ -z "$WINEFSYNC" ] && export WINEFSYNC=1
-[ -z "$WINEDEBUG" ] && export WINEDEBUG=-all
+: "${GTK_IM_MODULE:=fcitx}"
+: "${QT_IM_MODULE:=fcitx}"
+: "${XMODIFIERS:=@im=fcitx}"
+: "${GTK_USE_PORTAL:=}"
+export GTK_IM_MODULE QT_IM_MODULE XMODIFIERS GTK_USE_PORTAL
+
+: "${WINEESYNC:=1}"
+: "${WINEFSYNC:=1}"
+: "${WINEDEBUG:=-all}"
+export WINEESYNC WINEFSYNC WINEDEBUG
 
 export PATH="@wineBin@:@winetricks@/bin:$PATH"
 WINE="@wineBin@/wine"
@@ -16,26 +20,29 @@ WINESERVER="@wineBin@/wineserver"
 WINETRICKS="@winetricks@/bin/winetricks"
 INSTALLER="@out@/share/kakaotalk/KakaoTalk_Setup.exe"
 
-PREFIX="$XDG_DATA_HOME"
-if [ -z "$PREFIX" ]; then
-  PREFIX="$HOME/.local/share"
-fi
-PREFIX="$PREFIX/kakaotalk"
+PREFIX="${XDG_DATA_HOME:-$HOME/.local/share}/kakaotalk"
 export WINEPREFIX="$PREFIX"
 export WINEARCH=win32
 
-if [ -n "$KAKAOTALK_FORCE_BACKEND" ]; then
-  BACKEND="$KAKAOTALK_FORCE_BACKEND"
-else
-  BACKEND=x11
-  if [ -n "$WAYLAND_DISPLAY" ]; then
+BACKEND="${KAKAOTALK_FORCE_BACKEND:-}"
+if [ -z "$BACKEND" ]; then
+  BACKEND="x11"
+  if [ -n "${WAYLAND_DISPLAY:-}" ]; then
     echo "Wayland session detected; defaulting to X11 for tray stability. Set KAKAOTALK_FORCE_BACKEND=wayland to try the Wayland driver." >&2
   fi
 fi
 
-if [ "$KAKAOTALK_CLEAN_START" = "1" ]; then
+if [ "${KAKAOTALK_CLEAN_START:-0}" = "1" ]; then
   "$WINESERVER" -k 2>/dev/null || true
 fi
+
+reg_add() {
+  "$WINE" reg add "$1" /v "$2" /t "$3" /d "$4" /f >/dev/null 2>&1 || true
+}
+
+reg_delete() {
+  "$WINE" reg delete "$1" /v "$2" /f >/dev/null 2>&1 || true
+}
 
 set_wine_graphics_driver() {
   local driver="$1"
@@ -48,40 +55,33 @@ set_wine_graphics_driver() {
   case "$driver" in
     wayland)
       if [ "$have_wayland" -eq 1 ]; then
-        "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Graphics" /t REG_SZ /d "wayland" /f || true
+        reg_add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" "Graphics" REG_SZ "wayland"
       else
-        "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Graphics" /t REG_SZ /d "x11" /f || true
+        reg_add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" "Graphics" REG_SZ "x11"
       fi
       ;;
     x11|*)
-      "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Graphics" /t REG_SZ /d "x11" /f || true
+      reg_add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" "Graphics" REG_SZ "x11"
       ;;
   esac
 }
 
 detect_scale_factor() {
   local number_re='^[0-9]+([.][0-9]+)?$'
+  local candidate
 
-  if [ -n "$KAKAOTALK_SCALE" ] && printf '%s' "$KAKAOTALK_SCALE" | grep -Eq "$number_re"; then
-    echo "$KAKAOTALK_SCALE"
-    return
-  fi
+  for var in KAKAOTALK_SCALE GDK_SCALE QT_SCALE_FACTOR; do
+    candidate="${!var:-}"
+    if [ -n "$candidate" ] && printf '%s' "$candidate" | grep -Eq "$number_re"; then
+      echo "$candidate"
+      return
+    fi
+  done
 
-  if [ -n "$GDK_SCALE" ] && printf '%s' "$GDK_SCALE" | grep -Eq "$number_re"; then
-    echo "$GDK_SCALE"
-    return
-  fi
-
-  if [ -n "$QT_SCALE_FACTOR" ] && printf '%s' "$QT_SCALE_FACTOR" | grep -Eq "$number_re"; then
-    echo "$QT_SCALE_FACTOR"
-    return
-  fi
-
-  if [ -n "$XCURSOR_SIZE" ] && command -v awk >/dev/null 2>&1; then
-    local approx
-    approx=$(awk -v size="$XCURSOR_SIZE" 'BEGIN { if (size > 0) printf "%.2f", size/24; }')
-    if [ -n "$approx" ]; then
-      echo "$approx"
+  if [ -n "${XCURSOR_SIZE:-}" ] && command -v awk >/dev/null 2>&1; then
+    candidate=$(awk -v size="$XCURSOR_SIZE" 'BEGIN { if (size > 0) printf "%.2f", size/24; }')
+    if [ -n "$candidate" ]; then
+      echo "$candidate"
       return
     fi
   fi
@@ -90,19 +90,18 @@ detect_scale_factor() {
 }
 
 calculate_dpi() {
+  local scale="$1"
+
   if command -v awk >/dev/null 2>&1; then
-    awk -v s="$1" 'BEGIN {
+    awk -v s="$scale" 'BEGIN {
       if (s !~ /^[0-9]+(\.[0-9]+)?$/ || s <= 0) s = 1;
       dpi = 96 * s;
       if (dpi < 96) dpi = 96;
       printf "%d", (dpi + 0.5);
     }'
   else
-    local int_scale=${1%.*}
-    case "$int_scale" in
-      ''|0) int_scale=1 ;;
-    esac
-    if [ "$int_scale" -lt 1 ] 2>/dev/null; then
+    local int_scale=${scale%.*}
+    if [ -z "$int_scale" ] || [ "$int_scale" -lt 1 ] 2>/dev/null; then
       int_scale=1
     fi
     echo $((96 * int_scale))
@@ -113,8 +112,8 @@ apply_dpi_settings() {
   local dpi="$1"
   local scale="$2"
 
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "LogPixels" /t REG_DWORD /d "$dpi" /f || true
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "Win8DpiScaling" /t REG_DWORD /d 1 /f || true
+  reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop" "LogPixels" REG_DWORD "$dpi"
+  reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop" "Win8DpiScaling" REG_DWORD 1
 
   local shell_icon_size
   local small_icon_size
@@ -123,16 +122,121 @@ apply_dpi_settings() {
     small_icon_size=$(awk -v s="$scale" 'BEGIN { printf "%d", 16 * s + 0.5 }')
   else
     local int_scale=${scale%.*}
-    [ -z "$int_scale" ] || [ "$int_scale" -lt 1 ] 2>/dev/null && int_scale=1
+    if [ -z "$int_scale" ] || [ "$int_scale" -lt 1 ] 2>/dev/null; then
+      int_scale=1
+    fi
     shell_icon_size=$((32 * int_scale))
     small_icon_size=$((16 * int_scale))
   fi
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop\\WindowMetrics" /v "Shell Icon Size" /t REG_SZ /d "$shell_icon_size" /f || true
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop\\WindowMetrics" /v "Shell Small Icon Size" /t REG_SZ /d "$small_icon_size" /f || true
 
-  if [ "$BACKEND" = x11 ]; then
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "DPI" /t REG_SZ /d "$dpi" /f || true
+  reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop\\WindowMetrics" "Shell Icon Size" REG_SZ "$shell_icon_size"
+  reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop\\WindowMetrics" "Shell Small Icon Size" REG_SZ "$small_icon_size"
+
+  if [ "$BACKEND" = "x11" ]; then
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "DPI" REG_SZ "$dpi"
   fi
+}
+
+initialize_prefix() {
+  if [ -d "$PREFIX" ]; then
+    return
+  fi
+
+  mkdir -p "$PREFIX"
+  "$WINEBOOT" -u
+
+  apply_dpi_settings "$DPI" "$SCALE_FACTOR"
+  reg_add "HKEY_CURRENT_USER\\Control Panel\\International" "Locale" REG_SZ "00000412"
+  reg_add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" "Default" REG_SZ "0412"
+  reg_add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" "InstallLanguage" REG_SZ "0412"
+
+  if [ "$BACKEND" = "x11" ]; then
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "Decorated" REG_SZ "Y"
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "Managed" REG_SZ "Y"
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "UseTakeFocus" REG_SZ "N"
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "UseXIM" REG_SZ "Y"
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "UsePrimarySelection" REG_SZ "N"
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "GrabClipboard" REG_SZ "Y"
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "UseSystemClipboard" REG_SZ "Y"
+  fi
+
+  reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop" "ForegroundLockTimeout" REG_DWORD 200000
+  reg_delete "HKEY_CURRENT_USER\\Software\\Wine\\Explorer" "Desktop"
+  reg_add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" "Audio" REG_SZ ""
+  reg_add "HKEY_CURRENT_USER\\Software\\Wine\\DragAcceptFiles" "Accept" REG_DWORD 1
+  reg_add "HKEY_CURRENT_USER\\Software\\Wine\\OleDropTarget" "Enable" REG_DWORD 1
+
+  set_wine_graphics_driver "$BACKEND"
+}
+
+ensure_corefonts() {
+  if [ ! -f "$PREFIX/.winetricks_done" ]; then
+    "$WINETRICKS" -q corefonts
+    touch "$PREFIX/.winetricks_done"
+  fi
+}
+
+configure_fonts() {
+  if [ -f "$PREFIX/.fonts_configured" ]; then
+    return
+  fi
+
+  echo "Configuring font replacements..." >&2
+
+  mkdir -p "$PREFIX/drive_c/windows/Fonts"
+  find -L @fontPath@ -type f \( -name "*.ttf" -o -name "*.otf" -o -name "*.ttc" \) | while read -r font; do
+    ln -sf "$font" "$PREFIX/drive_c/windows/Fonts/$(basename "$font")" 2>/dev/null || true
+  done
+
+  local emoji_file="NotoColorEmoji.ttf"
+  local detected
+  detected=$(find "$PREFIX/drive_c/windows/Fonts" -maxdepth 1 \( -iname "NotoColorEmoji.ttf" -o -iname "NotoColorEmoji.otf" \) -print -quit)
+  if [ -n "$detected" ]; then
+    emoji_file=$(basename "$detected")
+  fi
+
+  local primary_font="Baekmuk Gulim"
+  local serif_font="Baekmuk Batang"
+  local emoji_font="Noto Color Emoji"
+  local font_link_value="$emoji_file,$emoji_font"
+
+  for font in @westernFonts@ @koreanFonts@; do
+    local replacement="$primary_font"
+    case "$font" in
+      "Batang"|"Gungsuh")
+        replacement="$serif_font"
+        ;;
+    esac
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" "$font" REG_SZ "$replacement"
+  done
+
+  for font in "Segoe UI Emoji" "Segoe UI Symbol" "Apple Color Emoji" "Symbola"; do
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" "$font" REG_SZ "$emoji_font"
+  done
+
+  local link_targets=("Tahoma" "Segoe UI" "Malgun Gothic" "Microsoft Sans Serif" "Gulim" "Batang" "$primary_font" "$serif_font")
+  for font in "${link_targets[@]}"; do
+    reg_add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" "$font" REG_MULTI_SZ "$font_link_value"
+  done
+
+  reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop" "FontSmoothing" REG_SZ "2"
+  reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop" "FontSmoothingType" REG_DWORD 2
+  reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop" "FontSmoothingGamma" REG_DWORD 1400
+
+  "$WINEBOOT"
+  touch "$PREFIX/.fonts_configured"
+}
+
+install_kakaotalk() {
+  if [ ! -f "$PREFIX/drive_c/Program Files/Kakao/KakaoTalk/KakaoTalk.exe" ]; then
+    echo "Installing KakaoTalk..."
+    "$WINE" "$INSTALLER"
+  fi
+}
+
+cleanup_shortcuts() {
+  rm -f "$HOME/.local/share/applications/wine/Programs/카카오톡.desktop" 2>/dev/null
+  rm -f "$HOME/.local/share/applications/wine/Programs/KakaoTalk.desktop" 2>/dev/null
 }
 
 SCALE_FACTOR=$(detect_scale_factor)
@@ -142,109 +246,13 @@ if [ "$SCALE_FACTOR" != "1" ]; then
   echo "Applying scale factor $SCALE_FACTOR (~${DPI} DPI) for Wine." >&2
 fi
 
-if [ ! -d "$PREFIX" ]; then
-  mkdir -p "$PREFIX"
-  "$WINEBOOT" -u
-
-  apply_dpi_settings "$DPI" "$SCALE_FACTOR"
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\International" /v "Locale" /t REG_SZ /d "00000412" /f
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "Default" /t REG_SZ /d "0412" /f
-  "$WINE" reg add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" /v "InstallLanguage" /t REG_SZ /d "0412" /f
-
-  if [ "$BACKEND" = x11 ]; then
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Decorated" /t REG_SZ /d "Y" /f
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "Managed" /t REG_SZ /d "Y" /f
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseTakeFocus" /t REG_SZ /d "N" /f
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseXIM" /t REG_SZ /d "Y" /f
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UsePrimarySelection" /t REG_SZ /d "N" /f
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "GrabClipboard" /t REG_SZ /d "Y" /f
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" /v "UseSystemClipboard" /t REG_SZ /d "Y" /f
-  fi
-
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "ForegroundLockTimeout" /t REG_DWORD /d 200000 /f
-
-  "$WINE" reg delete "HKEY_CURRENT_USER\\Software\\Wine\\Explorer" /v "Desktop" /f 2>/dev/null || true
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Drivers" /v "Audio" /t REG_SZ /d "" /f
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\DragAcceptFiles" /v "Accept" /t REG_DWORD /d 1 /f
-  "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\OleDropTarget" /v "Enable" /t REG_DWORD /d 1 /f
-
-  set_wine_graphics_driver "$BACKEND"
-fi
-
-if [ ! -f "$PREFIX/.winetricks_done" ]; then
-  "$WINETRICKS" -q corefonts
-  touch "$PREFIX/.winetricks_done"
-fi
-
-if [ ! -f "$PREFIX/.fonts_configured" ]; then
-  echo "Configuring font replacements..." >&2
-
-  mkdir -p "$PREFIX/drive_c/windows/Fonts"
-
-  find -L @fontPath@ -type f \( -name "*.ttf" -o -name "*.otf" -o -name "*.ttc" \) | while read -r font; do
-    name=$(basename "$font")
-    ln -sf "$font" "$PREFIX/drive_c/windows/Fonts/$name" 2>/dev/null || true
-  done
-
-  # Detect Emoji font filename (Noto Color Emoji)
-  EMOJI_FILE="NotoColorEmoji.ttf"
-  DETECTED_EMOJI=$(find "$PREFIX/drive_c/windows/Fonts" -maxdepth 1 \( -iname "NotoColorEmoji.ttf" -o -iname "NotoColorEmoji.otf" \) -print -quit)
-  if [ -n "$DETECTED_EMOJI" ]; then
-    EMOJI_FILE=$(basename "$DETECTED_EMOJI")
-  fi
-
-  PRIMARY_FONT="Baekmuk Gulim"
-  SERIF_FONT="Baekmuk Batang"
-  EMOJI_FONT="Noto Color Emoji"
-  
-  # Simplify FontLink to just the Emoji font. 
-  FONT_LINK_VALUE="$EMOJI_FILE,$EMOJI_FONT"
-
-  # Register Replacements
-  for font in @westernFonts@ @koreanFonts@; do
-    replacement="$PRIMARY_FONT"
-    case "$font" in
-      "Batang"|"Gungsuh")
-        replacement="$SERIF_FONT"
-        ;;
-    esac
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "$replacement" /f
-  done
-
-  # Add replacements for other emoji fonts to point to our chosen one
-  for font in "Segoe UI Emoji" "Segoe UI Symbol" "Apple Color Emoji" "Symbola"; do
-    "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "$EMOJI_FONT" /f
-  done
-
-  # Apply SystemLink (Fallback) to standard Windows fonts AND the replacement Korean fonts
-  # This ensures that if an app asks for "Tahoma" (mapped to Baekmuk), it links to Symbola.
-  # And if it asks for "Baekmuk Gulim" directly, it also links to Symbola.
-  LINK_TARGETS=("Tahoma" "Segoe UI" "Malgun Gothic" "Microsoft Sans Serif" "Gulim" "Batang" "$PRIMARY_FONT" "$SERIF_FONT")
-  
-  for font in "${LINK_TARGETS[@]}"; do
-    "$WINE" reg add "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" /v "$font" /t REG_MULTI_SZ /d "$FONT_LINK_VALUE" /f
-  done
-
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothing" /t REG_SZ /d "2" /f
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingType" /t REG_DWORD /d 2 /f
-  "$WINE" reg add "HKEY_CURRENT_USER\\Control Panel\\Desktop" /v "FontSmoothingGamma" /t REG_DWORD /d 1400 /f
-
-  # Force Wine to refresh font cache and registry
-  "$WINEBOOT"
-
-  touch "$PREFIX/.fonts_configured"
-fi
-
-if [ ! -f "$PREFIX/drive_c/Program Files/Kakao/KakaoTalk/KakaoTalk.exe" ]; then
-  echo "Installing KakaoTalk..."
-  "$WINE" "$INSTALLER"
-fi
-
-rm -f "$HOME/.local/share/applications/wine/Programs/카카오톡.desktop" 2>/dev/null
-rm -f "$HOME/.local/share/applications/wine/Programs/KakaoTalk.desktop" 2>/dev/null
+initialize_prefix
+ensure_corefonts
+configure_fonts
+install_kakaotalk
+cleanup_shortcuts
 
 set_wine_graphics_driver "$BACKEND"
-
 apply_dpi_settings "$DPI" "$SCALE_FACTOR"
 
 "$WINE" "C:\\Program Files\\Kakao\\KakaoTalk\\KakaoTalk.exe" "$@"

@@ -63,7 +63,7 @@
             startupWMClass = "kakaotalk.exe";
           };
 
-          fontPackages = [ symbola baekmuk-ttf ];
+          fontPackages = [ noto-fonts-emoji baekmuk-ttf ];
 
           # Create a symlink join of all fonts to make them easily accessible in one path
           fontPath = symlinkJoin {

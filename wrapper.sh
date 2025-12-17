@@ -186,20 +186,19 @@ if [ ! -f "$PREFIX/.fonts_configured" ]; then
     ln -sf "$font" "$PREFIX/drive_c/windows/Fonts/$name" 2>/dev/null || true
   done
 
-  # Detect Symbola filename
-  SYMBOLA_FILE="Symbola.ttf"
-  DETECTED_SYMBOLA=$(find "$PREFIX/drive_c/windows/Fonts" -maxdepth 1 -iname "symbola.*" -print -quit)
-  if [ -n "$DETECTED_SYMBOLA" ]; then
-    SYMBOLA_FILE=$(basename "$DETECTED_SYMBOLA")
+  # Detect Emoji font filename (Noto Color Emoji)
+  EMOJI_FILE="NotoColorEmoji.ttf"
+  DETECTED_EMOJI=$(find "$PREFIX/drive_c/windows/Fonts" -maxdepth 1 \( -iname "NotoColorEmoji.ttf" -o -iname "NotoColorEmoji.otf" \) -print -quit)
+  if [ -n "$DETECTED_EMOJI" ]; then
+    EMOJI_FILE=$(basename "$DETECTED_EMOJI")
   fi
 
   PRIMARY_FONT="Baekmuk Gulim"
   SERIF_FONT="Baekmuk Batang"
-  EMOJI_FONT="Symbola"
+  EMOJI_FONT="Noto Color Emoji"
   
   # Simplify FontLink to just the Emoji font. 
-  # Self-referencing links (Gulim -> Gulim) are unnecessary and potentially problematic.
-  FONT_LINK_VALUE="$SYMBOLA_FILE,$EMOJI_FONT"
+  FONT_LINK_VALUE="$EMOJI_FILE,$EMOJI_FONT"
 
   # Register Replacements
   for font in @westernFonts@ @koreanFonts@; do
@@ -212,8 +211,8 @@ if [ ! -f "$PREFIX/.fonts_configured" ]; then
     "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "$replacement" /f
   done
 
-  # Add Symbola replacement for emoji fonts
-  for font in "Segoe UI Emoji" "Segoe UI Symbol" "Apple Color Emoji" "Noto Color Emoji"; do
+  # Add replacements for other emoji fonts to point to our chosen one
+  for font in "Segoe UI Emoji" "Segoe UI Symbol" "Apple Color Emoji" "Symbola"; do
     "$WINE" reg add "HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements" /v "$font" /t REG_SZ /d "$EMOJI_FONT" /f
   done
 

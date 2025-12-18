@@ -1,18 +1,7 @@
 {
   description = "A Nix flake for KakaoTalk";
-  inputs = {
-    kakaotalk-exe = {
-      url = "https://app-pc.kakaocdn.net/talk/win32/KakaoTalk_Setup.exe";
-      flake = false;
-    };
-    kakaotalk-icon = {
-      url =
-        "https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg";
-      flake = false;
-    };
-  };
 
-  outputs = { self, nixpkgs, kakaotalk-exe, kakaotalk-icon }:
+  outputs = { self, nixpkgs }:
     let
       inherit (nixpkgs.lib) concatMapStringsSep genAttrs;
 
@@ -50,6 +39,7 @@
       mkPackage = system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+          sources = pkgs.callPackage ./_sources/generated.nix {};
 
           fontPackages = with pkgs; [ noto-fonts-emoji pretendard ];
           fontPath = pkgs.symlinkJoin {
@@ -71,7 +61,7 @@
         in pkgs.stdenv.mkDerivation rec {
           pname = "kakaotalk";
           version = "0.1.0";
-          src = kakaotalk-exe;
+          src = sources.kakaotalk-exe.src;
           dontUnpack = true;
 
           nativeBuildInputs = [ pkgs.wineWowPackages.stable pkgs.winetricks ];
@@ -79,7 +69,7 @@
           installPhase = ''
             runHook preInstall
 
-            install -Dm644 ${kakaotalk-icon} \
+            install -Dm644 ${sources.kakaotalk-icon.src} \
               $out/share/icons/hicolor/scalable/apps/kakaotalk.svg
             install -Dm644 ${src} $out/share/kakaotalk/KakaoTalk_Setup.exe
             install -Dm755 ${./wrapper.sh} $out/bin/kakaotalk

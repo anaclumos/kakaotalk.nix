@@ -1,0 +1,7 @@
+[kakaotalk-exe]
+src.manual = "0.0.0"
+fetch.url = "https://app-pc.kakaocdn.net/talk/win32/KakaoTalk_Setup.exe"
+
+[kakaotalk-icon]
+src.manual = "latest"
+fetch.url = "https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg"

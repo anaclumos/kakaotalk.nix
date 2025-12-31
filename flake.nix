@@ -41,7 +41,7 @@
           pkgs = nixpkgs.legacyPackages.${system};
           sources = pkgs.callPackage ./_sources/generated.nix {};
 
-          fontPackages = with pkgs; [ noto-fonts-emoji pretendard ];
+          fontPackages = with pkgs; [ noto-fonts-color-emoji pretendard ];
           fontPath = pkgs.symlinkJoin {
             name = "kakaotalk-fonts";
             paths = fontPackages;

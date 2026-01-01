@@ -60,11 +60,16 @@
           };
         in pkgs.stdenv.mkDerivation rec {
           pname = "kakaotalk";
-          version = "0.1.0";
+          version = "0.2.0";
           src = sources.kakaotalk-exe.src;
           dontUnpack = true;
 
           nativeBuildInputs = [ pkgs.wineWowPackages.stable pkgs.winetricks ];
+
+          # Optional runtime dependencies for enhanced reliability features
+          # - xdotool: window activation, phantom window hiding, watchdog
+          # - wmctrl: alternative window activation method
+          propagatedBuildInputs = [ pkgs.xdotool pkgs.wmctrl ];
 
           installPhase = ''
             runHook preInstall

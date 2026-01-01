@@ -1,8 +1,18 @@
-
-
 # KakaoTalk Nix Flake
 
-This repository packages the Windows version of **KakaoTalk** for NixOS.
+This repository packages the Windows version of **KakaoTalk** for NixOS using Wine.
+
+## Features
+
+- Single-instance management with automatic window activation
+- Stuck app detection and recovery
+- Optional watchdog mode for monitoring
+- Phantom window hiding (fixes white rectangle issue)
+- HiDPI scaling support
+- Korean font configuration (Pretendard + Noto Color Emoji)
+- Wayland/X11 backend selection
+
+## Installation
 
 ```nix
 {
@@ -10,7 +20,7 @@ This repository packages the Windows version of **KakaoTalk** for NixOS.
 
   outputs = { self, nixpkgs, kakaotalk, ... }: {
     nixosConfigurations."my-host".configuration = { pkgs, ... }: {
-      environment.systemPackages = with pkgs; [
+      environment.systemPackages = [
         kakaotalk.packages.${pkgs.system}.kakaotalk
       ];
     };
@@ -18,11 +28,8 @@ This repository packages the Windows version of **KakaoTalk** for NixOS.
 }
 ```
 
-
-## Installation
-
 > [!IMPORTANT]
-> On first launch, you must run `kakaotalk` in terminal to install & create desktop item.
+> On first launch, run `kakaotalk` in terminal to install and create the desktop entry.
 
 | Step | Description | Screenshot |
 |------|-------------|------------|
@@ -37,17 +44,101 @@ This repository packages the Windows version of **KakaoTalk** for NixOS.
 
 If you're interested in how it actually works in NixOS, see: https://github.com/anaclumos/nix
 
-## Wayland users
+## Environment Variables
 
-- Default backend is Xwayland for tray stability (Wine's Wayland driver still has tray issues). To try native Wayland, launch with `KAKAOTALK_FORCE_BACKEND=wayland kakaotalk`.
-- If the app gets stuck in the tray, you can do a clean start:  
-  `KAKAOTALK_CLEAN_START=1 kakaotalk`  
-  (equivalent to `WINEPREFIX=${XDG_DATA_HOME:-$HOME/.local/share}/kakaotalk wineserver -k` before launch)
+| Variable | Description |
+|----------|-------------|
+| `KAKAOTALK_CLEAN_START=1` | Kill existing processes and start fresh |
+| `KAKAOTALK_WATCHDOG=1` | Enable watchdog mode for stuck detection |
+| `KAKAOTALK_HIDE_PHANTOM=1` | Hide phantom windows (white rectangles) |
+| `KAKAOTALK_FORCE_BACKEND=wayland` | Use native Wayland instead of X11 |
+| `KAKAOTALK_NO_SINGLE_INSTANCE=1` | Disable single-instance enforcement |
+| `KAKAOTALK_SCALE=2` | Force specific scale factor for HiDPI |
+
+## Reliability Features
+
+### Single Instance Management
+
+- **Automatic window activation**: Launching `kakaotalk` when already running brings the existing window to foreground
+- **Lock file mechanism**: Prevents multiple instances from corrupting Wine state
+- **Stale lock detection**: Automatically cleans up orphaned lock files
+
+### Stuck App Recovery
+
+If KakaoTalk becomes unresponsive (running but no visible window, tray icon not working):
+
+```bash
+KAKAOTALK_CLEAN_START=1 kakaotalk
+```
+
+### Watchdog Mode
+
+Monitors the app and warns when it appears stuck:
+
+```bash
+KAKAOTALK_WATCHDOG=1 kakaotalk
+```
+
+The watchdog checks every 30 seconds for:
+- Visible window presence
+- Wineserver responsiveness
+- Process health
+
+### Phantom Window Hiding
+
+KakaoTalk creates small hidden windows for Windows message handling. If these become visible as white rectangles:
+
+```bash
+KAKAOTALK_HIDE_PHANTOM=1 kakaotalk
+```
+
+## Wayland
+
+- Default backend is X11/Xwayland for tray stability
+- To try native Wayland: `KAKAOTALK_FORCE_BACKEND=wayland kakaotalk`
+- The wrapper automatically detects Wayland and uses XWayland
+
+## Troubleshooting
+
+### App is stuck (running but no window, unresponsive tray)
+
+```bash
+KAKAOTALK_CLEAN_START=1 kakaotalk
+```
+
+### Small white rectangle appears at screen edge
+
+This is KakaoTalk's hidden message pump window:
+
+```bash
+KAKAOTALK_HIDE_PHANTOM=1 kakaotalk
+```
+
+### Tray icon not showing or not clickable
+
+1. **GNOME**: Install the [AppIndicator extension](https://extensions.gnome.org/extension/615/appindicator-support/)
+2. **Minimal WMs**: Run [snixembed](https://git.sr.ht/~steef/snixembed) for XEmbed-to-SNI bridging
+3. **Wayland**: Try X11 backend: `KAKAOTALK_FORCE_BACKEND=x11 kakaotalk`
+
+### Window won't come to foreground
+
+The wrapper uses `xdotool` and `wmctrl` for window activation (included as dependencies):
+
+```bash
+# Manually activate
+wmctrl -a "KakaoTalk"
+# or
+xdotool search --name "KakaoTalk" windowactivate
+```
+
+### Login issues
+
+Keep trying to login - once it succeeds, it continues to work. If you see a server error after first login, exit completely and try again.
 
 ## Uninstalling
 
 1. Remove the flake input from your configuration and rebuild.
-2. Delete the Wine prefix and leftover desktop files:
+2. Delete the Wine prefix and leftover files:
 
 ```bash
 rm -rf "${XDG_DATA_HOME:-$HOME/.local/share}/kakaotalk"
@@ -57,12 +148,12 @@ rm -f ~/.local/share/applications/wine-protocol-kakaotalk.desktop
 rm -f ~/.local/share/applications/wine-protocol-kakaoopen.desktop
 ```
 
+## Building
+
+```bash
+NIXPKGS_ALLOW_UNFREE=1 nix build --impure
+```
+
 ## License
 
 KakaoTalk is proprietary software owned by Kakao Corp. This flake is merely a packaging script and does not provide the software itself.
-
-## Building
-
-```
-NIXPKGS_ALLOW_UNFREE=1 nix build --impure
-```

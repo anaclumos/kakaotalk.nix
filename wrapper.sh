@@ -502,14 +502,17 @@ initialize_prefix() {
     reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "Decorated" REG_SZ "Y"
     reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "Managed" REG_SZ "Y"
     reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "UseTakeFocus" REG_SZ "N"
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "GrabFullscreen" REG_SZ "N"
     reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "UseXIM" REG_SZ "Y"
     reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "UsePrimarySelection" REG_SZ "N"
     reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "GrabClipboard" REG_SZ "Y"
     reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "UseSystemClipboard" REG_SZ "Y"
   fi
 
-  # Improved focus handling settings (reduces stuck window issues)
-  reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop" "ForegroundLockTimeout" REG_DWORD 0
+  # Prevent focus stealing - max timeout = never steal focus
+  # 0x7FFFFFFF = max signed 32-bit int, effectively infinite
+  reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop" "ForegroundLockTimeout" REG_DWORD 2147483647
+  # FlashCount 0 = flash infinitely in taskbar instead of stealing focus
   reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop" "ForegroundFlashCount" REG_DWORD 0
 
   # Disable virtual desktop (can cause window issues)
@@ -654,6 +657,14 @@ main() {
   # Apply runtime settings
   set_wine_graphics_driver "$BACKEND"
   apply_dpi_settings "$DPI" "$SCALE_FACTOR"
+
+  # Apply focus-stealing prevention (runtime, not just init)
+  reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop" "ForegroundLockTimeout" REG_DWORD 2147483647
+  reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop" "ForegroundFlashCount" REG_DWORD 0
+  if [ "$BACKEND" = "x11" ]; then
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "UseTakeFocus" REG_SZ "N"
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "GrabFullscreen" REG_SZ "N"
+  fi
 
   # Check tray support
   check_tray_support

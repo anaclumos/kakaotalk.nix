@@ -51,7 +51,7 @@ If you're interested in how it actually works in NixOS, see: https://github.com/
 | `KAKAOTALK_CLEAN_START=1` | Kill existing processes and start fresh |
 | `KAKAOTALK_WATCHDOG=1` | Enable watchdog mode for stuck detection |
 | `KAKAOTALK_HIDE_PHANTOM=0` | Disable phantom window hiding (enabled by default) |
-| `KAKAOTALK_ENSURE_EXPLORER=0` | Skip starting explorer.exe for tray (enabled by default) |
+| `KAKAOTALK_ENSURE_EXPLORER=1` | Start explorer.exe for tray (disabled by default, usually not needed) |
 | `KAKAOTALK_FORCE_BACKEND=wayland` | Use native Wayland instead of X11 |
 | `KAKAOTALK_NO_SINGLE_INSTANCE=1` | Disable single-instance enforcement |
 | `KAKAOTALK_SCALE=2` | Force specific scale factor for HiDPI |

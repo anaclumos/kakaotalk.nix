@@ -64,7 +64,7 @@ command -v xprop >/dev/null 2>&1 && HAS_XPROP=1
 # KAKAOTALK_WATCHDOG: Set to 1 to enable watchdog mode (monitors for stuck state)
 # KAKAOTALK_NO_SINGLE_INSTANCE: Set to 1 to disable single-instance enforcement
 # KAKAOTALK_HIDE_PHANTOM: Set to 0 to disable phantom window hiding (default: 1)
-# KAKAOTALK_ENSURE_EXPLORER: Set to 0 to skip starting explorer.exe (default: 1)
+# KAKAOTALK_ENSURE_EXPLORER: Set to 1 to start explorer.exe for tray (default: 0, usually not needed)
 # KAKAOTALK_PHANTOM_INTERVAL: Phantom monitor check interval in seconds (default: 1)
 
 BACKEND="${KAKAOTALK_FORCE_BACKEND:-}"
@@ -733,7 +733,7 @@ main() {
 
   check_tray_support
 
-  if [ "${KAKAOTALK_ENSURE_EXPLORER:-1}" = "1" ]; then
+  if [ "${KAKAOTALK_ENSURE_EXPLORER:-0}" = "1" ]; then
     ensure_wine_shell
   fi
 

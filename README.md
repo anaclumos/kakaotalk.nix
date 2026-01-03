@@ -50,10 +50,12 @@ If you're interested in how it actually works in NixOS, see: https://github.com/
 |----------|-------------|
 | `KAKAOTALK_CLEAN_START=1` | Kill existing processes and start fresh |
 | `KAKAOTALK_WATCHDOG=1` | Enable watchdog mode for stuck detection |
-| `KAKAOTALK_HIDE_PHANTOM=1` | Hide phantom windows (white rectangles) |
+| `KAKAOTALK_HIDE_PHANTOM=0` | Disable phantom window hiding (enabled by default) |
+| `KAKAOTALK_ENSURE_EXPLORER=0` | Skip starting explorer.exe for tray (enabled by default) |
 | `KAKAOTALK_FORCE_BACKEND=wayland` | Use native Wayland instead of X11 |
 | `KAKAOTALK_NO_SINGLE_INSTANCE=1` | Disable single-instance enforcement |
 | `KAKAOTALK_SCALE=2` | Force specific scale factor for HiDPI |
+| `KAKAOTALK_PHANTOM_INTERVAL=1` | Phantom monitor check interval in seconds |
 
 ## Reliability Features
 
@@ -84,13 +86,23 @@ The watchdog checks every 30 seconds for:
 - Wineserver responsiveness
 - Process health
 
-### Phantom Window Hiding
+### Phantom Window Handling
 
-KakaoTalk creates small hidden windows for Windows message handling. If these become visible as white rectangles:
+KakaoTalk creates small hidden windows for Windows message handling. The wrapper now automatically monitors and hides these by moving them offscreen (enabled by default). To disable:
 
 ```bash
-KAKAOTALK_HIDE_PHANTOM=1 kakaotalk
+KAKAOTALK_HIDE_PHANTOM=0 kakaotalk
 ```
+
+### Focus Steal Prevention
+
+Focus stealing is prevented via Wine registry settings that are applied automatically:
+
+- `ForegroundLockTimeout` set to maximum (Windows-side prevention)
+- `UseTakeFocus` disabled for KakaoTalk (X11-side prevention)
+- `ForegroundFlashCount` set to 0 (flash in taskbar instead of stealing focus)
+
+These settings are applied during prefix initialization and at runtime.
 
 ## Wayland
 
@@ -108,10 +120,10 @@ KAKAOTALK_CLEAN_START=1 kakaotalk
 
 ### Small white rectangle appears at screen edge
 
-This is KakaoTalk's hidden message pump window:
+This is KakaoTalk's hidden message pump window. The wrapper now automatically handles this (enabled by default). If you still see issues, try adjusting the monitor interval:
 
 ```bash
-KAKAOTALK_HIDE_PHANTOM=1 kakaotalk
+KAKAOTALK_PHANTOM_INTERVAL=0.5 kakaotalk
 ```
 
 ### Tray icon not showing or not clickable

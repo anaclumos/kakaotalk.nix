@@ -51,17 +51,21 @@ KAKAO_EXE_UNIX="$PREFIX/drive_c/Program Files/Kakao/KakaoTalk/KakaoTalk.exe"
 # -----------------------------------------------------------------------------
 HAS_XDOTOOL=0
 HAS_WMCTRL=0
+HAS_XPROP=0
 command -v xdotool >/dev/null 2>&1 && HAS_XDOTOOL=1
 command -v wmctrl >/dev/null 2>&1 && HAS_WMCTRL=1
+command -v xprop >/dev/null 2>&1 && HAS_XPROP=1
 
 # -----------------------------------------------------------------------------
-# Configuration Options
+# Configuration Options (env vars)
 # -----------------------------------------------------------------------------
 # KAKAOTALK_FORCE_BACKEND: Force x11 or wayland graphics driver
 # KAKAOTALK_CLEAN_START: Set to 1 to kill existing processes before start
 # KAKAOTALK_WATCHDOG: Set to 1 to enable watchdog mode (monitors for stuck state)
 # KAKAOTALK_NO_SINGLE_INSTANCE: Set to 1 to disable single-instance enforcement
-# KAKAOTALK_HIDE_PHANTOM: Set to 1 to hide phantom windows (requires xdotool)
+# KAKAOTALK_HIDE_PHANTOM: Set to 0 to disable phantom window hiding (default: 1)
+# KAKAOTALK_ENSURE_EXPLORER: Set to 0 to skip starting explorer.exe (default: 1)
+# KAKAOTALK_PHANTOM_INTERVAL: Phantom monitor check interval in seconds (default: 1)
 
 BACKEND="${KAKAOTALK_FORCE_BACKEND:-}"
 if [ -z "$BACKEND" ]; then
@@ -227,30 +231,82 @@ has_visible_window() {
   return 1
 }
 
-# Hide phantom windows (small invisible windows used by KakaoTalk)
-hide_phantom_windows() {
-  if [ "$HAS_XDOTOOL" -ne 1 ]; then
-    return
-  fi
+# CRITICAL: Move offscreen, do NOT minimize/unmap - these are message pumps for tray/notifications
+# Only hide windows that are very small (likely phantom/message-pump windows)
+hide_phantom_windows_once() {
+  [ "$HAS_XDOTOOL" -eq 1 ] || return 0
 
-  sleep 3  # Wait for windows to spawn
-
-  local wids
+  local wid wids WIDTH HEIGHT SCREEN X Y WINDOW
   wids=$(xdotool search --class "kakaotalk.exe" 2>/dev/null || true)
 
   for wid in $wids; do
-    local geom
-    geom=$(xdotool getwindowgeometry "$wid" 2>/dev/null || true)
-    if [ -z "$geom" ]; then
+    if ! eval "$(xdotool getwindowgeometry --shell "$wid" 2>/dev/null)"; then
       continue
     fi
 
-    # Check for very small windows (phantom windows are typically 1x1 to 32x32)
-    if echo "$geom" | grep -qE "Geometry: [0-3]?[0-9]x[0-3]?[0-9]$"; then
-      log_info "Hiding phantom window $wid"
-      xdotool windowminimize "$wid" 2>/dev/null || true
+    # Only target very small windows (phantom windows are typically 1x1 to 32x32)
+    # Be conservative: don't touch anything > 32 pixels
+    if [ "${WIDTH:-9999}" -le 32 ] && [ "${HEIGHT:-9999}" -le 32 ]; then
+      local wm_name=""
+      local wm_class=""
+
+      if [ "$HAS_XPROP" -eq 1 ]; then
+        wm_name=$(xprop -id "$wid" WM_NAME 2>/dev/null | sed -n 's/.*= "\(.*\)".*/\1/p' || true)
+        wm_class=$(xprop -id "$wid" WM_CLASS 2>/dev/null | sed -n 's/.*= "\([^"]*\)".*/\1/p' || true)
+
+        # Preserve any window with a meaningful name (not empty, not generic)
+        case "$wm_name" in
+          ""|" ")
+            # Empty name - likely a phantom window, proceed to hide
+            ;;
+          *)
+            # Has a name - preserve it (could be notification, tray handler, etc)
+            log_info "Preserving small window $wid (name='$wm_name', ${WIDTH}x${HEIGHT})"
+            continue
+            ;;
+        esac
+      fi
+
+      # Move offscreen instead of minimizing (preserves message handling)
+      xdotool windowmove "$wid" -10000 -10000 2>/dev/null || true
+
+      if [ "$HAS_WMCTRL" -eq 1 ]; then
+        local wid_hex
+        wid_hex=$(printf '0x%x' "$wid")
+        wmctrl -i -r "$wid_hex" -b add,skip_taskbar,skip_pager 2>/dev/null || true
+      fi
+
+      log_info "Moved phantom window $wid offscreen (${WIDTH}x${HEIGHT}, name='$wm_name')"
     fi
   done
+}
+
+monitor_phantom_windows() {
+  [ "$HAS_XDOTOOL" -eq 1 ] || return 0
+
+  local interval="${KAKAOTALK_PHANTOM_INTERVAL:-1}"
+  declare -A seen_windows
+  log_info "Phantom window monitor started (interval=${interval}s)"
+
+  while true; do
+    if [ -z "$(get_kakaotalk_pids)" ]; then
+      break
+    fi
+
+    local wid wids
+    wids=$(xdotool search --class "kakaotalk.exe" 2>/dev/null || true)
+    for wid in $wids; do
+      if [ -z "${seen_windows[$wid]:-}" ]; then
+        seen_windows["$wid"]=1
+        hide_phantom_windows_once
+        break
+      fi
+    done
+
+    sleep "$interval"
+  done
+
+  log_info "Phantom window monitor exiting"
 }
 
 # -----------------------------------------------------------------------------
@@ -497,7 +553,6 @@ initialize_prefix() {
   reg_add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" "Default" REG_SZ "0412"
   reg_add "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Language" "InstallLanguage" REG_SZ "0412"
 
-  # X11 driver settings for better window management
   if [ "$BACKEND" = "x11" ]; then
     reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "Decorated" REG_SZ "Y"
     reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "Managed" REG_SZ "Y"
@@ -507,12 +562,12 @@ initialize_prefix() {
     reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "UsePrimarySelection" REG_SZ "N"
     reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "GrabClipboard" REG_SZ "Y"
     reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "UseSystemClipboard" REG_SZ "Y"
+
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\AppDefaults\\KakaoTalk.exe\\X11 Driver" "UseTakeFocus" REG_SZ "N"
+    reg_add "HKEY_CURRENT_USER\\Software\\Wine\\AppDefaults\\KakaoTalk.exe\\X11 Driver" "GrabFullscreen" REG_SZ "N"
   fi
 
-  # Prevent focus stealing - max timeout = never steal focus
-  # 0x7FFFFFFF = max signed 32-bit int, effectively infinite
   reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop" "ForegroundLockTimeout" REG_DWORD 2147483647
-  # FlashCount 0 = flash infinitely in taskbar instead of stealing focus
   reg_add "HKEY_CURRENT_USER\\Control Panel\\Desktop" "ForegroundFlashCount" REG_DWORD 0
 
   # Disable virtual desktop (can cause window issues)
@@ -605,9 +660,7 @@ cleanup_shortcuts() {
 # -----------------------------------------------------------------------------
 
 check_tray_support() {
-  # Check if we're on Wayland without proper tray support
   if [ -n "${WAYLAND_DISPLAY:-}" ] || [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
-    # Check for SNI-capable tray
     if ! dbus-send --session --dest=org.kde.StatusNotifierWatcher \
          --print-reply /StatusNotifierWatcher \
          org.freedesktop.DBus.Properties.Get \
@@ -618,6 +671,18 @@ check_tray_support() {
     fi
   fi
 }
+
+ensure_wine_shell() {
+  "$WINE" start /b explorer.exe >/dev/null 2>&1 || true
+}
+
+# NOTE: focus_guard() was removed - it had a fatal flaw where it would prevent
+# users from intentionally using KakaoTalk after the grace period (any click on
+# KakaoTalk would immediately restore focus to the previous window).
+# Focus stealing prevention now relies solely on Wine registry settings:
+#   - ForegroundLockTimeout = max int32 (Windows-side prevention)
+#   - UseTakeFocus = "N" (X11-side prevention)
+#   - GrabFullscreen = "N"
 
 # -----------------------------------------------------------------------------
 # Main Entry Point
@@ -666,22 +731,32 @@ main() {
     reg_add "HKEY_CURRENT_USER\\Software\\Wine\\X11 Driver" "GrabFullscreen" REG_SZ "N"
   fi
 
-  # Check tray support
   check_tray_support
 
-  # Hide phantom windows in background if requested
-  if [ "${KAKAOTALK_HIDE_PHANTOM:-0}" = "1" ] && [ "$HAS_XDOTOOL" -eq 1 ]; then
-    hide_phantom_windows &
+  if [ "${KAKAOTALK_ENSURE_EXPLORER:-1}" = "1" ]; then
+    ensure_wine_shell
   fi
 
-  # Start watchdog if requested
+  local bg_pids=""
+
+  if [ "${KAKAOTALK_HIDE_PHANTOM:-1}" = "1" ] && [ "$HAS_XDOTOOL" -eq 1 ]; then
+    ( sleep 2; hide_phantom_windows_once ) &
+    monitor_phantom_windows &
+    bg_pids="$bg_pids $!"
+  fi
+
+  # Focus steal prevention relies on Wine registry settings (see initialize_prefix)
+  # No runtime focus_guard needed
+
   if [ "${KAKAOTALK_WATCHDOG:-0}" = "1" ]; then
     run_watchdog &
-    WATCHDOG_PID=$!
-    trap "release_lock; kill $WATCHDOG_PID 2>/dev/null || true" EXIT
+    bg_pids="$bg_pids $!"
   fi
 
-  # Launch KakaoTalk
+  if [ -n "$bg_pids" ]; then
+    trap "release_lock; kill $bg_pids 2>/dev/null || true" EXIT
+  fi
+
   log_info "Starting KakaoTalk..."
   exec "$WINE" "$KAKAO_EXE" "$@"
 }

@@ -280,6 +280,14 @@ ensure_corefonts() {
 configure_fonts() {
   [ -f "$PREFIX/.fonts_configured" ] && return
   log_info "Configuring fonts..."
+  mkdir -p "$PREFIX/drive_c/windows/Fonts"
+  find -L @fontPath@ -type f \( -name "*.ttf" -o -name "*.otf" -o -name "*.ttc" \) | while read -r font; do
+    ln -sf "$font" "$PREFIX/drive_c/windows/Fonts/$(basename "$font")" 2>/dev/null || true
+  done
+  local primary="Pretendard"
+  for font in @westernFonts@ @koreanFonts@; do
+    reg_add "HKCU\\Software\\Wine\\Fonts\\Replacements" "$font" REG_SZ "$primary"
+  done
   reg_add "HKCU\\Control Panel\\Desktop" "FontSmoothing" REG_SZ "2"
   reg_add "HKCU\\Control Panel\\Desktop" "FontSmoothingType" REG_DWORD 2
   reg_add "HKCU\\Control Panel\\Desktop" "FontSmoothingGamma" REG_DWORD 1400

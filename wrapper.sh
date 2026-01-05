@@ -280,24 +280,6 @@ ensure_corefonts() {
 configure_fonts() {
   [ -f "$PREFIX/.fonts_configured" ] && return
   log_info "Configuring fonts..."
-  mkdir -p "$PREFIX/drive_c/windows/Fonts"
-  find -L @fontPath@ -type f \( -name "*.ttf" -o -name "*.otf" -o -name "*.ttc" \) | while read -r font; do
-    ln -sf "$font" "$PREFIX/drive_c/windows/Fonts/$(basename "$font")" 2>/dev/null || true
-  done
-  local emoji_file="NotoColorEmoji.ttf"
-  local detected; detected=$(find "$PREFIX/drive_c/windows/Fonts" -maxdepth 1 \( -iname "NotoColorEmoji.ttf" -o -iname "NotoColorEmoji.otf" \) -print -quit)
-  [ -n "$detected" ] && emoji_file=$(basename "$detected")
-  local primary="Pretendard" emoji="Noto Color Emoji" link_val="$emoji_file,$emoji"
-  for font in @westernFonts@ @koreanFonts@; do
-    local r="$primary"; case "$font" in "Batang"|"Gungsuh") r="$primary" ;; esac
-    reg_add "HKCU\\Software\\Wine\\Fonts\\Replacements" "$font" REG_SZ "$r"
-  done
-  for font in "Segoe UI Emoji" "Segoe UI Symbol" "Apple Color Emoji" "Symbola"; do
-    reg_add "HKCU\\Software\\Wine\\Fonts\\Replacements" "$font" REG_SZ "$emoji"
-  done
-  for font in "Tahoma" "Segoe UI" "Malgun Gothic" "Microsoft Sans Serif" "Gulim" "Batang" "$primary"; do
-    reg_add "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink" "$font" REG_MULTI_SZ "$link_val"
-  done
   reg_add "HKCU\\Control Panel\\Desktop" "FontSmoothing" REG_SZ "2"
   reg_add "HKCU\\Control Panel\\Desktop" "FontSmoothingType" REG_DWORD 2
   reg_add "HKCU\\Control Panel\\Desktop" "FontSmoothingGamma" REG_DWORD 1400

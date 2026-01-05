@@ -4,54 +4,14 @@
   outputs =
     { self, nixpkgs }:
     let
-      inherit (nixpkgs.lib) concatMapStringsSep genAttrs;
+      inherit (nixpkgs.lib) genAttrs;
       systems = [ "x86_64-linux" ];
-
-      westernFonts = [
-        "Arial"
-        "Times New Roman"
-        "Courier New"
-        "Verdana"
-        "Tahoma"
-        "Georgia"
-        "Trebuchet MS"
-        "Comic Sans MS"
-        "Impact"
-        "Lucida Console"
-        "Lucida Sans Unicode"
-        "Palatino Linotype"
-        "Segoe UI"
-        "Segoe Print"
-        "Segoe Script"
-        "Calibri"
-        "Cambria"
-        "Candara"
-        "Consolas"
-        "Constantia"
-        "Corbel"
-      ];
-
-      koreanFonts = [
-        "Gulim"
-        "Dotum"
-        "Batang"
-        "Gungsuh"
-        "Malgun Gothic"
-      ];
-      quoteList = l: concatMapStringsSep " " (f: ''"${f}"'') l;
 
       mkPackage =
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
           sources = pkgs.callPackage ./_sources/generated.nix { };
-          fontPath = pkgs.symlinkJoin {
-            name = "kakaotalk-fonts";
-            paths = with pkgs; [
-              noto-fonts-color-emoji
-              pretendard
-            ];
-          };
           desktopItem = pkgs.makeDesktopItem {
             name = "kakaotalk";
             exec = "kakaotalk %U";
@@ -90,10 +50,7 @@
               --replace-fail "@wineBin@" "${pkgs.wineWowPackages.stable}/bin" \
               --replace-fail "@wineLib@" "${pkgs.wineWowPackages.stable}/lib" \
               --replace-fail "@winetricks@" "${pkgs.winetricks}" \
-              --replace-fail "@out@" "$out" \
-              --replace-fail "@westernFonts@" '${quoteList westernFonts}' \
-              --replace-fail "@koreanFonts@" '${quoteList koreanFonts}' \
-              --replace-fail "@fontPath@" "${fontPath}/share/fonts"
+              --replace-fail "@out@" "$out"
             install -Dm644 ${desktopItem}/share/applications/kakaotalk.desktop $out/share/applications/kakaotalk.desktop
             runHook postInstall
           '';

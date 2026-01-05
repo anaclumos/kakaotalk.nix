@@ -83,11 +83,14 @@ try_activate_window() {
     [ -z "$wid" ] && wid=$(xdotool search --name "KakaoTalk" 2>/dev/null | head -1)
     [ -z "$wid" ] && wid=$(xdotool search --class "kakaotalk.exe" 2>/dev/null | head -1)
     if [ -n "$wid" ]; then
-      # Unmap/map cycle forces X11 Expose event, fixing black window issue in Wine
-      xdotool windowunmap "$wid" 2>/dev/null || true
-      sleep 0.05
-      xdotool windowmap "$wid" 2>/dev/null || true
-      xdotool windowactivate --sync "$wid" 2>/dev/null && { log_info "Activated via xdotool"; activated=0; }
+      local WIDTH HEIGHT
+      eval "$(xdotool getwindowgeometry --shell "$wid" 2>/dev/null)" || true
+      xdotool windowactivate --sync "$wid" 2>/dev/null || true
+      if [ -n "${WIDTH:-}" ] && [ -n "${HEIGHT:-}" ]; then
+        xdotool windowsize "$wid" $((WIDTH + 1)) "$HEIGHT" 2>/dev/null || true
+        xdotool windowsize "$wid" "$WIDTH" "$HEIGHT" 2>/dev/null || true
+      fi
+      xdotool windowfocus --sync "$wid" 2>/dev/null && { log_info "Activated via xdotool"; activated=0; }
     fi
   fi
   if [ $activated -ne 0 ] && [ "$HAS_WMCTRL" -eq 1 ]; then

@@ -77,20 +77,22 @@ find_kakaotalk_windows() {
 }
 
 try_activate_window() {
-  local activated=1
-  if [ "$HAS_WMCTRL" -eq 1 ]; then
-    wmctrl -a "카카오톡" 2>/dev/null && { log_info "Activated via wmctrl"; activated=0; }
-    [ $activated -ne 0 ] && wmctrl -a "KakaoTalk" 2>/dev/null && { log_info "Activated via wmctrl"; activated=0; }
-  fi
-  if [ $activated -ne 0 ] && [ "$HAS_XDOTOOL" -eq 1 ]; then
-    local wid
+  local activated=1 wid=""
+  if [ "$HAS_XDOTOOL" -eq 1 ]; then
     wid=$(xdotool search --name "카카오톡" 2>/dev/null | head -1)
     [ -z "$wid" ] && wid=$(xdotool search --name "KakaoTalk" 2>/dev/null | head -1)
     [ -z "$wid" ] && wid=$(xdotool search --class "kakaotalk.exe" 2>/dev/null | head -1)
     if [ -n "$wid" ]; then
+      # Unmap/map cycle forces X11 Expose event, fixing black window issue in Wine
+      xdotool windowunmap "$wid" 2>/dev/null || true
+      sleep 0.05
       xdotool windowmap "$wid" 2>/dev/null || true
       xdotool windowactivate --sync "$wid" 2>/dev/null && { log_info "Activated via xdotool"; activated=0; }
     fi
+  fi
+  if [ $activated -ne 0 ] && [ "$HAS_WMCTRL" -eq 1 ]; then
+    wmctrl -a "카카오톡" 2>/dev/null && { log_info "Activated via wmctrl"; activated=0; }
+    [ $activated -ne 0 ] && wmctrl -a "KakaoTalk" 2>/dev/null && { log_info "Activated via wmctrl"; activated=0; }
   fi
   return $activated
 }
